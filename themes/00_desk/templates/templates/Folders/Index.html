@@ -1,0 +1,21 @@
+<f:layout name="Desk" />
+<f:section name="title">{type}</f:section>
+<f:section name="content">
+    <div class="page-header"><h1>{type} <span class="muted">{desk:t(key: 'ui.folderTypes')}</span></h1></div>
+    <p class="muted">{desk:t(key: 'ui.folderTypeHint')} <code>{directory}</code></p>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>{desk:t(key: 'ui.items')}</th><th>{desk:t(key: 'ui.templates')}</th><th>variables.php</th><th>{desk:t(key: 'ui.updatedAt')}</th></tr></thead>
+            <tbody>
+                <f:for each="{items}" as="item">
+                    <tr>
+                        <td><strong>{item.slug}</strong><br><code class="muted">{item.path}</code></td>
+                        <td><f:for each="{item.templates}" as="tpl"><code>{tpl}</code> </f:for></td>
+                        <td>{f:if(condition: item.hasVariables, then: '✓', else: '–')}</td>
+                        <td>{item.modified}</td>
+                    </tr>
+                </f:for>
+            </tbody>
+        </table>
+    </div>
+</f:section>

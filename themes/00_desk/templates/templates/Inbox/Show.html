@@ -1,0 +1,62 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.inbox')} #{entry.id}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb"><a href="/inbox">{desk:t(key: 'ui.inbox')}</a></div>
+            <h1>{entry.formLabel} <span class="muted">#{entry.id} · {desk:date(value: entry.receivedAt)}</span> <span class="badge badge--inbox-{entry.status}">{desk:t(key: 'ui.inbox.{entry.status}')}</span></h1>
+        </div>
+        <div class="page-header__actions">
+            <f:if condition="{entry.item}"><a class="button button--primary" href="/types/{entry.item.type}/{entry.item.id}?inbox={entry.id}">{desk:t(key: 'ui.inbox.apply')}</a></f:if>
+        </div>
+    </div>
+
+    <div class="record-layout">
+        <div class="record-main">
+            <div class="card">
+                <dl class="dl">
+                    <f:for each="{entry.fields}" as="f"><dt>{f.label}</dt><dd>{f.value -> f:format.nl2br()}</dd></f:for>
+                </dl>
+            </div>
+        </div>
+        <aside class="record-side">
+            <form method="post" action="/inbox/{entry.id}" class="card fields">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <div class="field field--full">
+                    <label class="field__label">{desk:t(key: 'ui.inbox.assign')}</label>
+                    <div class="field__control">
+                        <div class="relation-field" data-relation-field data-types="{entry.itemTypes -> f:join(separator: ',')}" data-multiple="0" data-name="item">
+                            <input type="hidden" name="item" value="">
+                            <div class="relation-selected chips" data-relation-selected>
+                                <f:if condition="{entry.item}">
+                                    <span class="chip chip--record" data-relation-chip data-value="{entry.item.type}:{entry.item.id}">
+                                        <input type="hidden" name="item" value="{entry.item.type}:{entry.item.id}">
+                                        <a href="/types/{entry.item.type}/{entry.item.id}" target="_blank">{entry.item.title}</a>
+                                        <button type="button" class="chip__remove" data-relation-remove aria-label="{desk:t(key: 'ui.remove')}">✕</button>
+                                    </span>
+                                </f:if>
+                            </div>
+                            <div class="relation-search">
+                                <input class="input" type="search" placeholder="{desk:t(key: 'ui.searchPlaceholder')}" data-relation-search autocomplete="off">
+                                <ul class="relation-results" data-relation-results hidden></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="field field--full">
+                    <label class="field__label" for="note">{desk:t(key: 'ui.inbox.note')}</label>
+                    <div class="field__control"><textarea class="input" id="note" name="note" rows="4">{entry.note}</textarea></div>
+                </div>
+                <div class="field field--full">
+                    <label class="field__label" for="status">{desk:t(key: 'ui.status')}</label>
+                    <div class="field__control">
+                        <select class="input" id="status" name="status">
+                            <f:for each="{0: 'open', 1: 'done', 2: 'spam'}" as="s"><option value="{s}" {f:if(condition: '{s} == {entry.status}', then: 'selected')}>{desk:t(key: 'ui.inbox.{s}')}</option></f:for>
+                        </select>
+                    </div>
+                </div>
+                <div class="field field--full"><button class="button button--primary">{desk:t(key: 'ui.save')}</button></div>
+            </form>
+        </aside>
+    </div>
+</f:section>

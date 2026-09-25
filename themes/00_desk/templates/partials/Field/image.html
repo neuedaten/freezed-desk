@@ -1,0 +1,16 @@
+<div class="media-field" data-media-field data-kind="images" data-multiple="0">
+    <input type="hidden" name="{name}" value="{value}" data-media-input>
+    <div class="media-selected" data-media-selected>
+        <f:if condition="{value}">
+            <f:variable name="m" value="{desk:media(id: value)}" />
+            <f:if condition="{m}">
+                <div class="media-card" data-media-card data-id="{m.id}">
+                    <f:if condition="{m.isImage}"><f:then><img src="{m.thumb}" alt="{m.alt}"></f:then><f:else><div class="media-card__file">{m.name}</div></f:else></f:if>
+                    <div class="media-card__meta"><a href="/media/{m.id}" target="_blank">{m.name}</a><br><span class="muted">{m.width}×{m.height}</span></div>
+                    <button type="button" class="button button--icon button--danger media-card__remove" data-media-remove title="{desk:t(key: 'ui.remove')}">✕</button>
+                </div>
+            </f:if>
+        </f:if>
+    </div>
+    <button type="button" class="button button--small" data-media-choose>{desk:t(key: 'ui.chooseMedia')}</button>
+</div>

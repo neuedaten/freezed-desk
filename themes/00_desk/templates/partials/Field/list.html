@@ -1,0 +1,32 @@
+<div class="list-field" data-list data-next="{f:count(subject: value)}">
+    <input type="hidden" name="{name}" value="">
+    <div class="list-rows" data-list-rows>
+        <f:for each="{value}" as="row" iteration="i">
+            <div class="list-row" data-list-row>
+                <span class="list-row__handle drag-handle" title="{desk:t(key: 'ui.sort')}">⋮⋮</span>
+                <div class="list-row__body">
+                    <f:render partial="Field/{field.of.type}" arguments="{field: field.of, name: '{name}[{i.index}]', value: row, id: '{id}-{i.index}'}" />
+                </div>
+                <div class="list-row__actions">
+                    <button type="button" class="button button--icon" data-list-up title="↑">↑</button>
+                    <button type="button" class="button button--icon" data-list-down title="↓">↓</button>
+                    <button type="button" class="button button--icon button--danger" data-list-remove title="{desk:t(key: 'ui.remove')}">✕</button>
+                </div>
+            </div>
+        </f:for>
+    </div>
+    <template data-list-template>
+        <div class="list-row" data-list-row>
+            <span class="list-row__handle drag-handle">⋮⋮</span>
+            <div class="list-row__body">
+                <f:render partial="Field/{field.of.type}" arguments="{field: field.of, name: '{name}[__INDEX__]', value: null, id: '{id}-__INDEX__'}" />
+            </div>
+            <div class="list-row__actions">
+                <button type="button" class="button button--icon" data-list-up title="↑">↑</button>
+                <button type="button" class="button button--icon" data-list-down title="↓">↓</button>
+                <button type="button" class="button button--icon button--danger" data-list-remove title="{desk:t(key: 'ui.remove')}">✕</button>
+            </div>
+        </div>
+    </template>
+    <button type="button" class="button button--small" data-list-add {f:if(condition: field.options.max, then: 'data-list-max="{field.options.max}"')}>+ {desk:t(key: 'ui.addRow')}</button>
+</div>

@@ -1,0 +1,17 @@
+<div class="relation-field" data-relation-field data-types="<f:if condition="{field.options.to.0}"><f:then><f:for each="{field.options.to}" as="t" iteration="it">{t}<f:if condition="!{it.isLast}">,</f:if></f:for></f:then><f:else>{field.options.to}</f:else></f:if>" data-multiple="{f:if(condition: field.options.multiple, then: '1', else: '0')}" data-name="{name}">
+    <input type="hidden" name="{name}" value="">
+    <div class="relation-selected chips" data-relation-selected>
+        <f:for each="{desk:refs(value: value)}" as="ref">
+            <span class="chip chip--record" data-relation-chip data-value="{ref.value}" draggable="true">
+                <input type="hidden" name="{name}[]" value="{ref.value}">
+                <a href="{ref.href}" target="_blank">{ref.title}</a>
+                <small class="muted">{ref.typeLabel}</small>
+                <button type="button" class="chip__remove" data-relation-remove aria-label="{desk:t(key: 'ui.remove')}">✕</button>
+            </span>
+        </f:for>
+    </div>
+    <div class="relation-search">
+        <input class="input" type="search" placeholder="{desk:t(key: 'ui.searchPlaceholder')}" data-relation-search autocomplete="off">
+        <ul class="relation-results" data-relation-results hidden></ul>
+    </div>
+</div>

@@ -1,0 +1,17 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.actions')}</f:section>
+<f:section name="content">
+    <div class="page-header"><h1>{desk:t(key: 'ui.actions')}</h1></div>
+    <f:for each="{actionList}" as="a">
+        <div class="card action">
+            <div class="action__head">
+                <div>
+                    <strong>{a.name}</strong> <code class="muted">{a.command}</code>
+                    <f:if condition="{a.last}"><div class="muted">{desk:date(value: a.last.at)} · {desk:t(key: 'ui.exitCode')} {a.last.exit} · {a.last.seconds} s</div></f:if>
+                </div>
+                <button type="button" class="button button--primary action-run" data-action-url="/actions/{a.name}/run" data-output="#output-{a.name}">▶ {desk:t(key: 'ui.run')}</button>
+            </div>
+            <pre class="output" id="output-{a.name}" hidden></pre>
+        </div>
+    </f:for>
+</f:section>

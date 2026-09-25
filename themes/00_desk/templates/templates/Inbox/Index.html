@@ -1,0 +1,42 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.inbox')}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <h1>{desk:t(key: 'ui.inbox')} <span class="muted">{counts.open}</span></h1>
+        <div class="page-header__actions">
+            <f:if condition="{configured}">
+                <form method="post" action="/inbox/fetch" class="inline"><input type="hidden" name="_token" value="{csrfToken}"><button class="button button--primary">{desk:t(key: 'ui.inbox.fetch')}</button></form>
+            </f:if>
+        </div>
+    </div>
+    <f:if condition="!{configured}"><p class="muted">{desk:t(key: 'ui.inbox.notConfigured')}</p></f:if>
+
+    <nav class="tabs">
+        <a class="tab {f:if(condition: '{status} == \'\'', then: 'is-active')}" href="/inbox">{desk:t(key: 'ui.inbox.open')} ({counts.open})</a>
+        <a class="tab {f:if(condition: '{status} == \'done\'', then: 'is-active')}" href="/inbox?status=done">{desk:t(key: 'ui.inbox.done')} ({counts.done})</a>
+        <a class="tab {f:if(condition: '{status} == \'spam\'', then: 'is-active')}" href="/inbox?status=spam">{desk:t(key: 'ui.inbox.spam')} ({counts.spam})</a>
+        <a class="tab {f:if(condition: '{status} == \'all\'', then: 'is-active')}" href="/inbox?status=all">{desk:t(key: 'ui.all')}</a>
+    </nav>
+
+    <f:if condition="{entries}">
+        <f:then>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>{desk:t(key: 'ui.inbox.receivedAt')}</th><th>{desk:t(key: 'ui.inbox.form')}</th><th>{desk:t(key: 'ui.inbox.message')}</th><th>{desk:t(key: 'ui.inbox.assign')}</th><th>{desk:t(key: 'ui.status')}</th></tr></thead>
+                    <tbody>
+                        <f:for each="{entries}" as="e">
+                            <tr class="{f:if(condition: '{e.status} == \'new\'', then: 'is-new')}">
+                                <td><a href="/inbox/{e.id}">{desk:date(value: e.receivedAt)}</a></td>
+                                <td>{e.formLabel}</td>
+                                <td>{e.summary}</td>
+                                <td><f:if condition="{e.item}"><a class="chip chip--link" href="/types/{e.item.type}/{e.item.id}">{e.item.title}</a></f:if></td>
+                                <td><span class="badge badge--inbox-{e.status}">{desk:t(key: 'ui.inbox.{e.status}')}</span></td>
+                            </tr>
+                        </f:for>
+                    </tbody>
+                </table>
+            </div>
+        </f:then>
+        <f:else><p class="empty">{desk:t(key: 'ui.inbox.empty')}</p></f:else>
+    </f:if>
+</f:section>

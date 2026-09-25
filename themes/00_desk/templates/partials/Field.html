@@ -1,0 +1,12 @@
+<div class="field field--{field.type} field--{field.width} {f:if(condition: error, then: 'has-error')}" data-field="{field.name}">
+    <label class="field__label" for="{id}">
+        {field.label}<f:if condition="{field.required}"><span class="field__required" title="required">*</span></f:if>
+        <f:if condition="{field.internal}"><span class="field__flag">{desk:t(key: 'ui.internal')}</span></f:if>
+        <f:if condition="{field.readonly}"><span class="field__flag">{desk:t(key: 'ui.readonly')}</span></f:if>
+    </label>
+    <div class="field__control">
+        <f:render partial="Field/{field.type}" arguments="{field: field, name: name, value: value, id: id}" />
+    </div>
+    <f:if condition="{error}"><div class="field__error">{error}</div></f:if>
+    <f:if condition="{field.help}"><div class="field__help">{field.help}</div></f:if>
+</div>

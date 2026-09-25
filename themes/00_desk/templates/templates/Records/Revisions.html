@@ -1,0 +1,52 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.revisions')} · {item.title}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb"><a href="/types/{schema.slug}">{schema.label}</a> › <a href="/types/{schema.slug}/{item.id}">{item.title}</a></div>
+            <h1>{desk:t(key: 'ui.revisions')}</h1>
+        </div>
+    </div>
+
+    <f:if condition="{revisions}">
+        <f:then>
+            <div class="record-layout">
+                <div class="record-main">
+                    <f:if condition="{selected}">
+                        <div class="card">
+                            <h2 class="card__title">{desk:t(key: 'ui.revision')} #{selected.id} · {desk:date(value: selected.createdAt)} <span class="muted">{selected.note}</span></h2>
+                            <p class="muted">{desk:t(key: 'ui.diff')}</p>
+                            <f:if condition="{diff}">
+                                <f:then>
+                                    <table class="table table--diff">
+                                        <thead><tr><th>{desk:t(key: 'ui.field')}</th><th>{desk:t(key: 'ui.then')}</th><th>{desk:t(key: 'ui.now')}</th></tr></thead>
+                                        <tbody>
+                                            <f:for each="{diff}" as="row">
+                                                <tr><th>{row.label}</th><td><pre>{row.then}</pre></td><td><pre>{row.now}</pre></td></tr>
+                                            </f:for>
+                                        </tbody>
+                                    </table>
+                                </f:then>
+                                <f:else><p class="muted">{desk:t(key: 'ui.noChanges')}</p></f:else>
+                            </f:if>
+                            <form method="post" action="/types/{schema.slug}/{item.id}/revisions/{selected.id}/restore" data-confirm="{desk:t(key: 'ui.restoreConfirm')}">
+                                <input type="hidden" name="_token" value="{csrfToken}">
+                                <button class="button button--primary">{desk:t(key: 'ui.restoreRevision')}</button>
+                            </form>
+                        </div>
+                    </f:if>
+                </div>
+                <aside class="record-side">
+                    <div class="card">
+                        <ul class="list list--compact">
+                            <f:for each="{revisions}" as="rev">
+                                <li class="{f:if(condition: '{rev.id} == {selected.id}', then: 'is-active')}"><a href="?rev={rev.id}">#{rev.id} · {desk:date(value: rev.createdAt)}</a> <span class="muted">{rev.note}</span></li>
+                            </f:for>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </f:then>
+        <f:else><p class="empty">{desk:t(key: 'ui.noRevisions')}</p></f:else>
+    </f:if>
+</f:section>

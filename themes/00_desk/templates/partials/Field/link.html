@@ -1,0 +1,14 @@
+<div class="subfields">
+    <div class="subfield subfield--wide">
+        <label class="subfield__label" for="{id}-href">{desk:t(key: 'ui.link.href')}</label>
+        <input class="input" type="text" id="{id}-href" name="{name}[href]" value="{value.href}" placeholder="https://… oder CONTENT:pages/kontakt">
+    </div>
+    <div class="subfield">
+        <label class="subfield__label" for="{id}-label">{desk:t(key: 'ui.link.label')}</label>
+        <input class="input" type="text" id="{id}-label" name="{name}[label]" value="{value.label}">
+    </div>
+    <div class="subfield subfield--check">
+        <input type="hidden" name="{name}[target]" value="">
+        <label class="checkbox"><input type="checkbox" name="{name}[target]" value="_blank" {f:if(condition: '{value.target} == \'_blank\'', then: 'checked')}> <span>{desk:t(key: 'ui.link.newTab')}</span></label>
+    </div>
+</div>

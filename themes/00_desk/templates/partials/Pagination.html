@@ -1,0 +1,7 @@
+<f:if condition="{pages} > 1">
+    <nav class="pagination" aria-label="Pagination">
+        <f:if condition="{page} > 1"><a class="button button--small" href="{desk:query(set: {page: '{page - 1}'})}">‹</a></f:if>
+        <span class="pagination__info">{desk:t(key: 'ui.page')} {page} {desk:t(key: 'ui.of')} {pages}</span>
+        <f:if condition="{page} < {pages}"><a class="button button--small" href="{desk:query(set: {page: '{page + 1}'})}">›</a></f:if>
+    </nav>
+</f:if>

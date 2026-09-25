@@ -1,0 +1,7 @@
+<div class="group">
+    <f:for each="{field.fields}" as="sub" key="subName">
+        <f:variable name="subValue" value="{value.{subName}}" />
+        <f:variable name="subName2" value="{name}[{subName}]" />
+        <f:render partial="Field" arguments="{field: sub, name: subName2, value: subValue, id: '{id}-{subName}'}" />
+    </f:for>
+</div>

@@ -1,0 +1,46 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.media')}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <h1>{desk:t(key: 'ui.media')} <span class="muted">{total}</span></h1>
+    </div>
+
+    <form method="post" action="/media/upload" enctype="multipart/form-data" class="dropzone" data-dropzone>
+        <input type="hidden" name="_token" value="{csrfToken}">
+        <input type="file" name="files[]" multiple data-dropzone-input>
+        <div class="dropzone__text">{desk:t(key: 'ui.uploadHint')} <span class="muted">(max. {desk:bytes(value: maxBytes)})</span></div>
+        <div class="dropzone__status" data-dropzone-status></div>
+        <noscript><button class="button">{desk:t(key: 'ui.upload')}</button></noscript>
+    </form>
+
+    <form class="toolbar" method="get" action="/media">
+        <input type="search" class="input" name="q" value="{q}" placeholder="{desk:t(key: 'ui.searchPlaceholder')}">
+        <select class="input" name="kind" onchange="this.form.submit()">
+            <option value="all" {f:if(condition: '{kind} == \'all\'', then: 'selected')}>{desk:t(key: 'ui.all')}</option>
+            <option value="images" {f:if(condition: '{kind} == \'images\'', then: 'selected')}>{desk:t(key: 'ui.images')}</option>
+            <option value="files" {f:if(condition: '{kind} == \'files\'', then: 'selected')}>{desk:t(key: 'ui.files')}</option>
+        </select>
+        <button class="button" type="submit">{desk:t(key: 'ui.search')}</button>
+    </form>
+
+    <f:if condition="{items}">
+        <f:then>
+            <div class="media-grid">
+                <f:for each="{items}" as="m">
+                    <f:variable name="usedIn" value="{usage.{m.id}}" />
+                    <a class="media-card media-card--link" href="/media/{m.id}">
+                        <f:if condition="{m.isImage}"><f:then><img src="{m.thumb}" alt="{m.alt}" loading="lazy"></f:then><f:else><div class="media-card__file">{m.mime}</div></f:else></f:if>
+                        <div class="media-card__meta">
+                            <strong>{m.name}</strong><br>
+                            <span class="muted"><f:if condition="{m.width}">{m.width}×{m.height} · </f:if>{desk:bytes(value: m.size)}</span><br>
+                            <span class="muted"><f:if condition="{usedIn}"><f:then>{desk:t(key: 'ui.usedInCount', params: {count: usedIn})}</f:then><f:else>{desk:t(key: 'ui.unused')}</f:else></f:if></span>
+                            <f:if condition="!{m.alt}"><span class="badge badge--warn" title="{desk:t(key: 'ui.alt')}">alt?</span></f:if>
+                        </div>
+                    </a>
+                </f:for>
+            </div>
+            <f:render partial="Pagination" arguments="{page: page, pages: pages}" />
+        </f:then>
+        <f:else><p class="empty">{desk:t(key: 'ui.noRecords')}</p></f:else>
+    </f:if>
+</f:section>

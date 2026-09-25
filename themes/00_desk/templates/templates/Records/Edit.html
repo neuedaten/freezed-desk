@@ -1,0 +1,114 @@
+<f:layout name="Desk" />
+<f:section name="title"><f:if condition="{item}"><f:then>{item.title}</f:then><f:else>{desk:t(key: 'ui.new')}</f:else></f:if> · {schema.labelSingular}</f:section>
+<f:section name="content">
+    <form method="post" action="{f:if(condition: item, then: '/types/{schema.slug}/{item.id}', else: '/types/{schema.slug}/new')}" class="record-form" data-guard>
+        <input type="hidden" name="_token" value="{csrfToken}">
+        <f:if condition="{inboxEntry}"><input type="hidden" name="inbox" value="{inboxEntry.id}"></f:if>
+
+        <div class="page-header page-header--sticky">
+            <div>
+                <div class="breadcrumb"><a href="/types/{schema.slug}">{schema.label}</a></div>
+                <h1><f:if condition="{item}"><f:then>{item.title}</f:then><f:else>{desk:t(key: 'ui.newRecord', params: {type: schema.labelSingular})}</f:else></f:if>
+                    <f:if condition="{item}"><f:render partial="Status" arguments="{status: item.status.value}" /></f:if></h1>
+            </div>
+            <div class="page-header__actions">
+                <f:if condition="{previewUrl}"><a class="button button--ghost" href="{previewUrl}" target="_blank" rel="noopener" title="{desk:t(key: 'ui.previewHelp', params: {url: previewUrl})}">{desk:t(key: 'ui.preview')}</a></f:if>
+                <f:if condition="{item}"><a class="button button--ghost" href="/types/{schema.slug}/{item.id}/revisions">{desk:t(key: 'ui.revisions')} ({revisionCount})</a></f:if>
+                <button class="button" type="submit" name="action" value="save">{desk:t(key: 'ui.save')}</button>
+                <f:if condition="!{schema.single}">
+                    <f:if condition="{item.status.value} == 'published'">
+                        <f:then><button class="button button--ghost" type="submit" name="action" value="draft">{desk:t(key: 'ui.unpublish')}</button></f:then>
+                        <f:else><button class="button button--primary" type="submit" name="action" value="publish">{desk:t(key: 'ui.saveAndPublish')}</button></f:else>
+                    </f:if>
+                </f:if>
+            </div>
+        </div>
+
+        <f:if condition="{errors}"><div class="flash flash--error">{desk:t(key: 'ui.errors')}</div></f:if>
+
+        <div class="record-layout">
+            <div class="record-main">
+                <f:if condition="{inboxEntry}">
+                    <aside class="card card--inbox">
+                        <h2 class="card__title">{desk:t(key: 'ui.inbox.message')} · <a href="/inbox/{inboxEntry.id}">#{inboxEntry.id}</a></h2>
+                        <dl class="dl">
+                            <f:for each="{inboxEntry.payload}" as="v" key="k"><dt>{k}</dt><dd>{v}</dd></f:for>
+                        </dl>
+                    </aside>
+                </f:if>
+
+                <div class="fields">
+                    <f:for each="{schema.fields}" as="field" key="fieldName">
+                        <f:variable name="fieldValue" value="{values.{fieldName}}" />
+                        <f:variable name="fieldError" value="{errors.{fieldName}}" />
+                        <f:variable name="fieldInputName" value="fields[{fieldName}]" />
+                        <f:render partial="Field" arguments="{field: field, name: fieldInputName, value: fieldValue, id: 'f-{fieldName}', error: fieldError}" />
+                    </f:for>
+                </div>
+            </div>
+
+            <aside class="record-side">
+                <div class="card">
+                    <f:if condition="!{schema.single}">
+                        <div class="field {f:if(condition: errors.slug, then: 'has-error')}">
+                            <label class="field__label" for="slug">{desk:t(key: 'ui.slug')}</label>
+                            <input class="input" type="text" id="slug" name="slug" value="{slug}" data-slug {f:if(condition: '{slug} == \'\'', then: 'data-slug-auto')}>
+                            <f:if condition="{errors.slug}"><div class="field__error">{errors.slug}</div></f:if>
+                            <div class="field__help">{desk:t(key: 'ui.slugHelp')}</div>
+                        </div>
+                    </f:if>
+
+                    <f:if condition="{schema.hasVariantChoice}">
+                        <div class="field {f:if(condition: errors.variant, then: 'has-error')}">
+                            <label class="field__label" for="variant">{desk:t(key: 'ui.variant')}</label>
+                            <select class="input" id="variant" name="variant">
+                                <f:for each="{schema.variants}" as="v" key="key">
+                                    <option value="{key}" {f:if(condition: '{key} == {variant}', then: 'selected')}>{v.label} ({v.template})</option>
+                                </f:for>
+                            </select>
+                            <f:if condition="{errors.variant}"><div class="field__error">{errors.variant}</div></f:if>
+                        </div>
+                    </f:if>
+                    <f:if condition="!{schema.hasVariantChoice}"><input type="hidden" name="variant" value="{variant}"></f:if>
+
+                    <f:if condition="{item}">
+                        <dl class="dl dl--small">
+                            <dt>{desk:t(key: 'ui.status')}</dt><dd><f:render partial="Status" arguments="{status: item.status.value}" /></dd>
+                            <dt>{desk:t(key: 'ui.updatedAt')}</dt><dd>{desk:date(value: item.updatedAt)}</dd>
+                            <dt>{desk:t(key: 'ui.createdAt')}</dt><dd>{desk:date(value: item.createdAt)}</dd>
+                            <f:if condition="{item.publishedAt}"><dt>{desk:t(key: 'ui.publishedAt')}</dt><dd>{desk:date(value: item.publishedAt)}</dd></f:if>
+                            <dt>ID</dt><dd>{item.id}</dd>
+                        </dl>
+                    </f:if>
+                </div>
+
+                <f:if condition="{referencing}">
+                    <div class="card">
+                        <h2 class="card__title">{desk:t(key: 'ui.referencedBy')}</h2>
+                        <ul class="list list--compact">
+                            <f:for each="{referencing}" as="ref">
+                                <li><a href="/types/{ref.item.type}/{ref.item.id}">{ref.item.title}</a> <span class="muted">{ref.item.type} · {ref.field}</span></li>
+                            </f:for>
+                        </ul>
+                    </div>
+                </f:if>
+            </aside>
+        </div>
+    </form>
+
+    <f:if condition="{item} && !{schema.single}">
+        <div class="danger-zone">
+            <form method="post" action="/types/{schema.slug}/{item.id}/status" class="inline">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <f:if condition="{item.status.value} == 'archived'">
+                    <f:then><button class="button button--ghost" name="status" value="draft">{desk:t(key: 'ui.restore')}</button></f:then>
+                    <f:else><button class="button button--ghost" name="status" value="archived">{desk:t(key: 'ui.archive')}</button></f:else>
+                </f:if>
+            </form>
+            <form method="post" action="/types/{schema.slug}/{item.id}/delete" class="inline" data-confirm="{desk:t(key: 'ui.deleteConfirm')}">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <button class="button button--ghost button--danger">{desk:t(key: 'ui.delete')}</button>
+            </form>
+        </div>
+    </f:if>
+</f:section>

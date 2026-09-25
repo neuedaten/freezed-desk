@@ -1,0 +1,4 @@
+<div class="input-group">
+    <input class="input input--short" type="number" id="{id}" name="{name}" value="{value}" {f:if(condition: field.options.step, then: 'step="{field.options.step}"', else: 'step="any"')} {f:if(condition: '{field.options.min} != \'\'', then: 'min="{field.options.min}"')} {f:if(condition: '{field.options.max} != \'\'', then: 'max="{field.options.max}"')} {f:if(condition: field.readonly, then: 'readonly')}>
+    <f:if condition="{field.options.unit}"><span class="input-group__unit">{field.options.unit}</span></f:if>
+</div>

@@ -1,0 +1,17 @@
+<div class="media-field media-field--multiple" data-media-field data-kind="images" data-multiple="1" data-name="{name}" {f:if(condition: field.options.max, then: 'data-max="{field.options.max}"')}>
+    <input type="hidden" name="{name}" value="">
+    <div class="media-selected media-grid media-grid--small" data-media-selected>
+        <f:for each="{value}" as="mediaId">
+            <f:variable name="m" value="{desk:media(id: mediaId)}" />
+            <f:if condition="{m}">
+                <div class="media-card" data-media-card data-id="{m.id}" draggable="true">
+                    <input type="hidden" name="{name}[]" value="{m.id}">
+                    <f:if condition="{m.isImage}"><f:then><img src="{m.thumb}" alt="{m.alt}"></f:then><f:else><div class="media-card__file">{m.name}</div></f:else></f:if>
+                    <div class="media-card__meta"><a href="/media/{m.id}" target="_blank">{m.name}</a></div>
+                    <button type="button" class="button button--icon button--danger media-card__remove" data-media-remove title="{desk:t(key: 'ui.remove')}">✕</button>
+                </div>
+            </f:if>
+        </f:for>
+    </div>
+    <button type="button" class="button button--small" data-media-choose>{desk:t(key: 'ui.chooseMedia')}</button>
+</div>

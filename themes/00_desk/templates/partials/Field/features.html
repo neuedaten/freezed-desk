@@ -1,0 +1,35 @@
+<f:variable name="vocabulary" value="{desk:vocabulary(field: field)}" />
+<input type="hidden" name="{name}" value="">
+<f:if condition="{vocabulary}">
+    <f:then>
+        <div class="features">
+            <f:for each="{vocabulary}" as="entry" key="key">
+                <f:variable name="featureValue" value="{value.{key}}" />
+                <div class="feature feature--{entry.kind}">
+                    <f:switch expression="{entry.kind}">
+                        <f:case value="bool">
+                            <label class="checkbox"><input type="checkbox" name="{name}[{key}]" value="1" {f:if(condition: featureValue, then: 'checked')}> <span>{entry.label}</span></label>
+                        </f:case>
+                        <f:case value="select">
+                            <label class="subfield__label" for="{id}-{key}">{entry.label}</label>
+                            <select class="input" id="{id}-{key}" name="{name}[{key}]">
+                                <option value=""></option>
+                                <f:for each="{entry.options}" as="option"><option value="{option}" {f:if(condition: '{option} == {featureValue}', then: 'selected')}>{option}</option></f:for>
+                            </select>
+                        </f:case>
+                        <f:case value="number">
+                            <label class="subfield__label" for="{id}-{key}">{entry.label}</label>
+                            <input class="input input--short" type="number" step="any" id="{id}-{key}" name="{name}[{key}]" value="{featureValue}">
+                        </f:case>
+                        <f:defaultCase>
+                            <label class="subfield__label" for="{id}-{key}">{entry.label}</label>
+                            <input class="input" type="text" id="{id}-{key}" name="{name}[{key}]" value="{featureValue}">
+                        </f:defaultCase>
+                    </f:switch>
+                    <f:if condition="{entry.group}"><span class="feature__group muted">{entry.group}</span></f:if>
+                </div>
+            </f:for>
+        </div>
+    </f:then>
+    <f:else><p class="muted">{desk:t(key: 'ui.none')} — <a href="/types/{field.options.from}">{field.options.from}</a></p></f:else>
+</f:if>

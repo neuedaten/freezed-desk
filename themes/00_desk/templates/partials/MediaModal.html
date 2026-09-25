@@ -1,0 +1,18 @@
+<dialog id="media-modal" class="modal" data-media-modal>
+    <form method="dialog" class="modal__inner">
+        <header class="modal__header">
+            <strong>{desk:t(key: 'ui.chooseMedia')}</strong>
+            <input type="search" class="input" data-media-search placeholder="{desk:t(key: 'ui.searchPlaceholder')}">
+            <label class="dropzone dropzone--inline">
+                <input type="file" multiple data-media-upload>
+                <span>{desk:t(key: 'ui.upload')}</span>
+            </label>
+            <button type="button" class="button button--ghost" data-media-close>✕</button>
+        </header>
+        <div class="modal__grid media-grid" data-media-grid></div>
+        <footer class="modal__footer">
+            <span class="muted" data-media-status></span>
+            <button type="button" class="button button--primary" data-media-confirm>{desk:t(key: 'ui.choose')}</button>
+        </footer>
+    </form>
+</dialog>

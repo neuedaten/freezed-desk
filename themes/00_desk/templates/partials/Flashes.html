@@ -1,0 +1,7 @@
+<f:if condition="{flashes}">
+    <div class="flashes">
+        <f:for each="{flashes}" as="flash">
+            <div class="flash flash--{flash.type}" role="status">{flash.message}</div>
+        </f:for>
+    </div>
+</f:if>

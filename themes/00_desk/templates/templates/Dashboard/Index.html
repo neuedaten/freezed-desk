@@ -1,0 +1,77 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'ui.overview')}</f:section>
+<f:section name="content">
+    <div class="page-header"><h1>{desk:t(key: 'ui.overview')}</h1></div>
+
+    <div class="tiles">
+        <f:for each="{types}" as="entry">
+            <a class="tile" href="/types/{entry.schema.slug}">
+                <div class="tile__title">{entry.schema.label}</div>
+                <f:if condition="{entry.schema.single}">
+                    <f:then><div class="tile__meta">{desk:t(key: 'ui.single')}</div></f:then>
+                    <f:else>
+                        <div class="tile__numbers">
+                            <span><strong>{entry.counts.published}</strong> {desk:t(key: 'ui.status.published')}</span>
+                            <span><strong>{entry.counts.draft}</strong> {desk:t(key: 'ui.status.draft')}</span>
+                            <f:if condition="{entry.counts.archived}"><span><strong>{entry.counts.archived}</strong> {desk:t(key: 'ui.status.archived')}</span></f:if>
+                        </div>
+                    </f:else>
+                </f:if>
+                <f:if condition="!{entry.schema.built}"><div class="tile__meta muted">{desk:t(key: 'ui.deskOnly')}</div></f:if>
+            </a>
+        </f:for>
+        <a class="tile" href="/media">
+            <div class="tile__title">{desk:t(key: 'ui.media')}</div>
+            <div class="tile__numbers"><span><strong>{mediaCount}</strong></span></div>
+        </a>
+        <f:if condition="{inboxEnabled}">
+            <a class="tile" href="/inbox">
+                <div class="tile__title">{desk:t(key: 'ui.inbox')}</div>
+                <div class="tile__numbers"><span><strong>{inboxOpen}</strong> {desk:t(key: 'ui.inbox.open')}</span></div>
+            </a>
+        </f:if>
+    </div>
+
+    <div class="columns">
+        <section class="card">
+            <h2 class="card__title">{desk:t(key: 'ui.drafts')}</h2>
+            <f:if condition="{drafts}">
+                <f:then>
+                    <ul class="list">
+                        <f:for each="{drafts}" as="d">
+                            <li><a href="/types/{d.schema.slug}/{d.item.id}">{d.item.title}</a> <span class="muted">{d.schema.labelSingular} · {desk:date(value: d.item.updatedAt)}</span></li>
+                        </f:for>
+                    </ul>
+                </f:then>
+                <f:else><p class="muted">{desk:t(key: 'ui.none')}</p></f:else>
+            </f:if>
+        </section>
+
+        <section class="card">
+            <h2 class="card__title">{desk:t(key: 'ui.recentChanges')}</h2>
+            <f:if condition="{recent}">
+                <f:then>
+                    <ul class="list">
+                        <f:for each="{recent}" as="r">
+                            <li><a href="/types/{r.schema.slug}/{r.item.id}">{r.item.title}</a> <span class="muted">{r.schema.labelSingular} · {desk:date(value: r.item.updatedAt)}</span> <f:render partial="Status" arguments="{status: r.item.status.value}" /></li>
+                        </f:for>
+                    </ul>
+                </f:then>
+                <f:else><p class="muted">{desk:t(key: 'ui.none')}</p></f:else>
+            </f:if>
+        </section>
+
+        <section class="card">
+            <h2 class="card__title">{desk:t(key: 'ui.actions')}</h2>
+            <p class="muted">{desk:t(key: 'ui.lastBuild')}: <f:if condition="{lastBuild}"><f:then>{desk:date(value: lastBuild.at)} ({desk:t(key: 'ui.exitCode')} {lastBuild.exit})</f:then><f:else>{desk:t(key: 'ui.never')}</f:else></f:if></p>
+            <f:if condition="{actions}">
+                <div class="button-row">
+                    <f:for each="{actions}" as="command" key="name">
+                        <button type="button" class="button action-run" data-action-url="/actions/{name}/run" data-output="#dashboard-output">▶ {name}</button>
+                    </f:for>
+                </div>
+                <pre class="output" id="dashboard-output" hidden></pre>
+            </f:if>
+        </section>
+    </div>
+</f:section>

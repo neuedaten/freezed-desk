@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="{locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><f:render section="title" optional="true" /> · {desk:t(key: 'ui.desk')}</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/css/desk.css?v={assetVersion}">
+</head>
+<body class="desk" data-csrf="{csrfToken}">
+<header class="topbar">
+    <a class="topbar__brand" href="/">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"/><rect x="3" y="10" width="12" height="3" rx="1" fill="currentColor"/><rect x="3" y="16" width="15" height="3" rx="1" fill="currentColor"/></svg>
+        <span>{desk:t(key: 'ui.desk')}</span>
+    </a>
+    <div class="topbar__right">
+        <f:if condition="{authUser}"><span class="topbar__user">{desk:t(key: 'ui.loggedInAs', params: {user: authUser})}</span></f:if>
+        <button type="button" class="topbar__toggle" data-toggle-nav aria-label="Menu">☰</button>
+    </div>
+</header>
+<div class="shell">
+    <nav class="sidebar" id="sidebar">
+        <a class="sidebar__link {f:if(condition: '{currentPath} == \'/\'', then: 'is-active')}" href="/">{desk:t(key: 'ui.overview')}</a>
+
+        <f:if condition="{builtTypes}">
+            <div class="sidebar__group">{desk:t(key: 'ui.types')}</div>
+            <f:for each="{builtTypes}" as="type">
+                <a class="sidebar__link {f:if(condition: '{currentPath} == \'/types/{type.slug}\' || {currentPath} == \'/types/{type.slug}/\'', then: 'is-active')}" href="/types/{type.slug}">{type.label}</a>
+            </f:for>
+        </f:if>
+
+        <f:if condition="{deskOnlyTypes}">
+            <div class="sidebar__group">{desk:t(key: 'ui.deskOnly')}</div>
+            <f:for each="{deskOnlyTypes}" as="type">
+                <a class="sidebar__link" href="/types/{type.slug}">{type.label}</a>
+            </f:for>
+        </f:if>
+
+        <f:if condition="{folderTypes}">
+            <div class="sidebar__group">{desk:t(key: 'ui.folderTypes')}</div>
+            <f:for each="{folderTypes}" as="type">
+                <a class="sidebar__link sidebar__link--muted" href="/folders/{type.slug}">{type.slug} <span class="sidebar__count">{type.count}</span></a>
+            </f:for>
+        </f:if>
+
+        <div class="sidebar__group">&nbsp;</div>
+        <a class="sidebar__link {f:if(condition: '{currentPath} == \'/media\'', then: 'is-active')}" href="/media">{desk:t(key: 'ui.media')}</a>
+        <f:if condition="{inboxEnabled}">
+            <a class="sidebar__link {f:if(condition: '{currentPath} == \'/inbox\'', then: 'is-active')}" href="/inbox">{desk:t(key: 'ui.inbox')}</a>
+        </f:if>
+        <f:if condition="{actions}">
+            <a class="sidebar__link {f:if(condition: '{currentPath} == \'/actions\'', then: 'is-active')}" href="/actions">{desk:t(key: 'ui.actions')}</a>
+        </f:if>
+    </nav>
+
+    <main class="main">
+        <f:render partial="Flashes" arguments="{flashes: flashes}" />
+        <f:render section="content" />
+    </main>
+</div>
+
+<f:render partial="MediaModal" />
+<script src="/assets/js/desk.js?v={assetVersion}" defer></script>
+</body>
+</html>

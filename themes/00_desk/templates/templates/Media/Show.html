@@ -1,0 +1,70 @@
+<f:layout name="Desk" />
+<f:section name="title">{media.originalName}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb"><a href="/media">{desk:t(key: 'ui.media')}</a></div>
+            <h1>{media.originalName}</h1>
+        </div>
+    </div>
+
+    <div class="record-layout">
+        <div class="record-main">
+            <div class="card">
+                <f:if condition="{thumb}">
+                    <f:then>
+                        <div class="focal-editor" data-focal data-x="{media.focalX}" data-y="{media.focalY}">
+                            <img src="{url}" alt="{media.alt}">
+                            <span class="focal-editor__marker" data-focal-marker hidden></span>
+                        </div>
+                        <p class="muted">{desk:t(key: 'ui.focalHelp')}</p>
+                    </f:then>
+                    <f:else><p><a class="button" href="{url}" target="_blank">{desk:t(key: 'ui.open')}</a></p></f:else>
+                </f:if>
+
+                <form method="post" action="/media/{media.id}" class="fields" data-guard>
+                    <input type="hidden" name="_token" value="{csrfToken}">
+                    <input type="hidden" name="focal[x]" value="{media.focalX}" data-focal-x>
+                    <input type="hidden" name="focal[y]" value="{media.focalY}" data-focal-y>
+                    <div class="field field--full"><label class="field__label" for="alt">{desk:t(key: 'ui.alt')}</label><div class="field__control"><input class="input" type="text" id="alt" name="alt" value="{media.alt}"></div></div>
+                    <div class="field field--full"><label class="field__label" for="caption">{desk:t(key: 'ui.caption')}</label><div class="field__control"><input class="input" type="text" id="caption" name="caption" value="{media.caption}"></div></div>
+                    <div class="field field--half"><label class="field__label" for="credit">{desk:t(key: 'ui.credit')}</label><div class="field__control"><input class="input" type="text" id="credit" name="credit" value="{media.credit}"></div></div>
+                    <div class="field field--half"><label class="field__label" for="license">{desk:t(key: 'ui.license')}</label><div class="field__control"><input class="input" type="text" id="license" name="license" value="{media.license}"></div></div>
+                    <div class="field field--full button-row">
+                        <button class="button button--primary">{desk:t(key: 'ui.save')}</button>
+                        <f:if condition="{thumb}"><button type="button" class="button button--ghost" data-focal-reset>{desk:t(key: 'ui.focalReset')}</button></f:if>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <aside class="record-side">
+            <div class="card">
+                <dl class="dl dl--small">
+                    <dt>{desk:t(key: 'ui.file')}</dt><dd><a href="{url}" target="_blank"><code>{media.file}</code></a></dd>
+                    <dt>MIME</dt><dd>{media.mime}</dd>
+                    <f:if condition="{media.width}"><dt>{desk:t(key: 'ui.dimensions')}</dt><dd>{media.width} × {media.height}</dd></f:if>
+                    <dt>{desk:t(key: 'ui.size')}</dt><dd>{desk:bytes(value: media.size)}</dd>
+                    <dt>{desk:t(key: 'ui.createdAt')}</dt><dd>{desk:date(value: media.createdAt)}</dd>
+                    <dt>ID</dt><dd>{media.id}</dd>
+                </dl>
+                <p class="muted">Template:<br><code>{snippet}</code></p>
+            </div>
+            <div class="card">
+                <h2 class="card__title">{desk:t(key: 'ui.usedIn')}</h2>
+                <f:if condition="{usages}">
+                    <f:then>
+                        <ul class="list list--compact">
+                            <f:for each="{usages}" as="u"><li><a href="/types/{u.item.type}/{u.item.id}">{u.item.title}</a> <span class="muted">{u.item.type} · {u.field}</span></li></f:for>
+                        </ul>
+                    </f:then>
+                    <f:else><p class="muted">{desk:t(key: 'ui.unused')}</p></f:else>
+                </f:if>
+            </div>
+            <form method="post" action="/media/{media.id}/delete" data-confirm="{desk:t(key: 'ui.deleteConfirm')}">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <f:if condition="{usages}"><input type="hidden" name="force" value="1"></f:if>
+                <button class="button button--ghost button--danger">{desk:t(key: 'ui.delete')}</button>
+            </form>
+        </aside>
+    </div>
+</f:section>

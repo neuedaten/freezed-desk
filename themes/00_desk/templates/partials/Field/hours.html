@@ -1,0 +1,31 @@
+<div class="hours-field" data-hours>
+    <f:for each="{0: 'mon', 1: 'tue', 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat', 6: 'sun'}" as="day">
+        <div class="hours-day" data-hours-day="{day}">
+            <div class="hours-day__label">{desk:t(key: 'day.{day}')}</div>
+            <div class="hours-day__ranges" data-hours-ranges>
+                <f:for each="{value.days.{day}}" as="range" iteration="i">
+                    <span class="hours-range" data-hours-range>
+                        <input class="input input--time" type="time" name="{name}[days][{day}][{i.index}][from]" value="{range.from}">
+                        <span>–</span>
+                        <input class="input input--time" type="time" name="{name}[days][{day}][{i.index}][to]" value="{range.to}">
+                        <button type="button" class="button button--icon" data-hours-remove aria-label="{desk:t(key: 'ui.remove')}">✕</button>
+                    </span>
+                </f:for>
+                <f:if condition="!{value.days.{day}}"><span class="muted hours-day__closed" data-hours-closed>{desk:t(key: 'ui.hours.closed')}</span></f:if>
+            </div>
+            <button type="button" class="button button--icon" data-hours-add data-name="{name}[days][{day}]" title="{desk:t(key: 'ui.hours.addRange')}">+</button>
+        </div>
+    </f:for>
+    <template data-hours-template>
+        <span class="hours-range" data-hours-range>
+            <input class="input input--time" type="time" name="__NAME__[__INDEX__][from]" value="">
+            <span>–</span>
+            <input class="input input--time" type="time" name="__NAME__[__INDEX__][to]" value="">
+            <button type="button" class="button button--icon" data-hours-remove aria-label="{desk:t(key: 'ui.remove')}">✕</button>
+        </span>
+    </template>
+    <div class="subfield">
+        <label class="subfield__label" for="{id}-note">{desk:t(key: 'ui.hours.note')}</label>
+        <input class="input" type="text" id="{id}-note" name="{name}[note]" value="{value.note}">
+    </div>
+</div>

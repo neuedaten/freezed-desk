@@ -1,0 +1,70 @@
+{
+  "name": "neuedaten/freezed-desk",
+  "type": "library",
+  "description": "Desk is the editorial backend for Freezed: schema-driven records in SQLite, a local web UI, and a content source for the static build.",
+  "keywords": [
+    "freezed",
+    "static site generator",
+    "cms",
+    "editorial",
+    "sqlite",
+    "fluid"
+  ],
+  "homepage": "https://github.com/neuedaten/freezed-desk",
+  "authors": [
+    {
+      "name": "Bastian Schwabe",
+      "role": "Developer"
+    }
+  ],
+  "license": "MIT",
+  "minimum-stability": "beta",
+  "prefer-stable": true,
+  "require": {
+    "php": "^8.4",
+    "ext-pdo": "*",
+    "ext-pdo_sqlite": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "neuedaten/freezed": "^0.14.0-beta",
+    "league/commonmark": "^2.6"
+  },
+  "suggest": {
+    "ext-intl": "Better slug transliteration for non-Latin titles.",
+    "ext-fileinfo": "MIME detection for uploads (strongly recommended).",
+    "ext-curl": "Fetching inbox submissions from a remote endpoint."
+  },
+  "autoload": {
+    "psr-4": {
+      "Neuedaten\\FreezedDesk\\": "Classes"
+    }
+  },
+  "bin": [
+    "bin/freezed-desk"
+  ],
+  "extra": {
+    "freezed": {
+      "commands": {
+        "desk": "Neuedaten\\FreezedDesk\\Commands\\ServeCommand",
+        "desk:migrate": "Neuedaten\\FreezedDesk\\Commands\\MigrateCommand",
+        "desk:show": "Neuedaten\\FreezedDesk\\Commands\\ShowCommand",
+        "desk:export": "Neuedaten\\FreezedDesk\\Commands\\ExportCommand",
+        "desk:import": "Neuedaten\\FreezedDesk\\Commands\\ImportCommand",
+        "desk:seed": "Neuedaten\\FreezedDesk\\Commands\\SeedCommand",
+        "desk:media:check": "Neuedaten\\FreezedDesk\\Commands\\MediaCheckCommand",
+        "desk:inbox": "Neuedaten\\FreezedDesk\\Commands\\InboxCommand",
+        "desk:schema": "Neuedaten\\FreezedDesk\\Commands\\SchemaCommand",
+        "desk:list": "Neuedaten\\FreezedDesk\\Commands\\ListCommand",
+        "desk:get": "Neuedaten\\FreezedDesk\\Commands\\GetCommand",
+        "desk:put": "Neuedaten\\FreezedDesk\\Commands\\PutCommand",
+        "desk:delete": "Neuedaten\\FreezedDesk\\Commands\\DeleteCommand",
+        "desk:publish": "Neuedaten\\FreezedDesk\\Commands\\PublishCommand",
+        "desk:unpublish": "Neuedaten\\FreezedDesk\\Commands\\UnpublishCommand",
+        "desk:archive": "Neuedaten\\FreezedDesk\\Commands\\ArchiveCommand",
+        "desk:media:add": "Neuedaten\\FreezedDesk\\Commands\\MediaAddCommand",
+        "desk:media:list": "Neuedaten\\FreezedDesk\\Commands\\MediaListCommand",
+        "desk:agent": "Neuedaten\\FreezedDesk\\Commands\\AgentCommand"
+      }
+    }
+  }
+}

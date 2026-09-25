@@ -1,0 +1,14 @@
+<div class="subfields">
+    <div class="subfield">
+        <label class="subfield__label" for="{id}-lat">{desk:t(key: 'ui.geo.lat')}</label>
+        <input class="input" type="text" inputmode="decimal" id="{id}-lat" name="{name}[lat]" value="{value.lat}">
+    </div>
+    <div class="subfield">
+        <label class="subfield__label" for="{id}-lon">{desk:t(key: 'ui.geo.lon')}</label>
+        <input class="input" type="text" inputmode="decimal" id="{id}-lon" name="{name}[lon]" value="{value.lon}">
+    </div>
+    <div class="subfield subfield--narrow">
+        <label class="subfield__label" for="{id}-zoom">{desk:t(key: 'ui.geo.zoom')}</label>
+        <input class="input" type="number" min="1" max="20" id="{id}-zoom" name="{name}[zoom]" value="{value.zoom}">
+    </div>
+</div>

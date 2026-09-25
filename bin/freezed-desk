@@ -1,0 +1,32 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Freezed Desk CLI entry point. Same three layouts as the core's bin/freezed:
+ * installed through Composer (bin proxy), standalone clone, project skeleton.
+ */
+$autoloadCandidates = [
+    $_composer_autoload_path ?? null,
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../../../../vendor/autoload.php',
+];
+
+$autoloadFound = null;
+foreach ($autoloadCandidates as $candidate) {
+    if ($candidate && file_exists($candidate)) {
+        require $candidate;
+        $autoloadFound = realpath($candidate) ?: $candidate;
+        break;
+    }
+}
+
+if ($autoloadFound === null) {
+    fwrite(STDERR, "Freezed Desk: could not locate Composer autoloader. Run 'composer install' first." . PHP_EOL);
+    exit(1);
+}
+
+// The web server process needs the same autoloader.
+putenv('DESK_AUTOLOAD=' . $autoloadFound);
+
+exit(\Neuedaten\FreezedDesk\Cli::run($argv));

@@ -6,7 +6,7 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-09-25
+## [0.1.0-beta] - 2026-09-25
 
 ### Added
 
@@ -37,3 +37,6 @@ follow [Semantic Versioning](https://semver.org/).
 - JSON interface for scripts and agents: `schema`, `list`, `get`, `put`,
   `delete`, `publish`, `unpublish`, `archive`, `media:add`, `media:list`, and
   `agent`, which prints a generated guide to the project's desk.
+
+[Unreleased]: https://github.com/neuedaten/freezed-desk/compare/v0.1.0-beta...HEAD
+[0.1.0-beta]: https://github.com/neuedaten/freezed-desk/releases/tag/v0.1.0-beta

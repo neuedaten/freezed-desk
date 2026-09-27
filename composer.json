@@ -1,70 +1,104 @@
 {
-  "name": "neuedaten/freezed-desk",
-  "type": "library",
-  "description": "Desk is the editorial backend for Freezed: schema-driven records in SQLite, a local web UI, and a content source for the static build.",
-  "keywords": [
-    "freezed",
-    "static site generator",
-    "cms",
-    "editorial",
-    "sqlite",
-    "fluid"
-  ],
-  "homepage": "https://github.com/neuedaten/freezed-desk",
-  "authors": [
-    {
-      "name": "Bastian Schwabe",
-      "role": "Developer"
+    "name": "neuedaten/freezed-desk",
+    "type": "library",
+    "description": "Desk is the editorial backend for Freezed: schema-driven records in SQLite, a local web UI, and a content source for the static build.",
+    "keywords": [
+        "freezed",
+        "static site generator",
+        "cms",
+        "editorial",
+        "sqlite",
+        "fluid"
+    ],
+    "homepage": "https://github.com/neuedaten/freezed-desk",
+    "authors": [
+        {
+            "name": "Bastian Schwabe",
+            "role": "Developer"
+        }
+    ],
+    "license": "MIT",
+    "minimum-stability": "beta",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.4",
+        "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "neuedaten/freezed": "^0.14.0-beta",
+        "league/commonmark": "^2.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.0"
+    },
+    "suggest": {
+        "ext-intl": "Better slug transliteration for non-Latin titles.",
+        "ext-fileinfo": "MIME detection for uploads (strongly recommended).",
+        "ext-curl": "Fetching inbox submissions from a remote endpoint."
+    },
+    "autoload": {
+        "psr-4": {
+            "Neuedaten\\FreezedDesk\\": "Classes"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Neuedaten\\FreezedDesk\\Tests\\": "tests"
+        }
+    },
+    "bin": [
+        "bin/freezed-desk"
+    ],
+    "extra": {
+        "freezed": {
+            "commands": {
+                "desk": "Neuedaten\\FreezedDesk\\Commands\\ServeCommand",
+                "desk:migrate": "Neuedaten\\FreezedDesk\\Commands\\MigrateCommand",
+                "desk:show": "Neuedaten\\FreezedDesk\\Commands\\ShowCommand",
+                "desk:export": "Neuedaten\\FreezedDesk\\Commands\\ExportCommand",
+                "desk:import": "Neuedaten\\FreezedDesk\\Commands\\ImportCommand",
+                "desk:seed": "Neuedaten\\FreezedDesk\\Commands\\SeedCommand",
+                "desk:media:check": "Neuedaten\\FreezedDesk\\Commands\\MediaCheckCommand",
+                "desk:inbox": "Neuedaten\\FreezedDesk\\Commands\\InboxCommand",
+                "desk:schema": "Neuedaten\\FreezedDesk\\Commands\\SchemaCommand",
+                "desk:list": "Neuedaten\\FreezedDesk\\Commands\\ListCommand",
+                "desk:get": "Neuedaten\\FreezedDesk\\Commands\\GetCommand",
+                "desk:put": "Neuedaten\\FreezedDesk\\Commands\\PutCommand",
+                "desk:validate": "Neuedaten\\FreezedDesk\\Commands\\ValidateCommand",
+                "desk:refs": "Neuedaten\\FreezedDesk\\Commands\\RefsCommand",
+                "desk:revisions": "Neuedaten\\FreezedDesk\\Commands\\RevisionsCommand",
+                "desk:revision": "Neuedaten\\FreezedDesk\\Commands\\RevisionCommand",
+                "desk:restore": "Neuedaten\\FreezedDesk\\Commands\\RestoreCommand",
+                "desk:delete": "Neuedaten\\FreezedDesk\\Commands\\DeleteCommand",
+                "desk:publish": "Neuedaten\\FreezedDesk\\Commands\\PublishCommand",
+                "desk:unpublish": "Neuedaten\\FreezedDesk\\Commands\\UnpublishCommand",
+                "desk:archive": "Neuedaten\\FreezedDesk\\Commands\\ArchiveCommand",
+                "desk:reorder": "Neuedaten\\FreezedDesk\\Commands\\ReorderCommand",
+                "desk:media:add": "Neuedaten\\FreezedDesk\\Commands\\MediaAddCommand",
+                "desk:media:list": "Neuedaten\\FreezedDesk\\Commands\\MediaListCommand",
+                "desk:media:get": "Neuedaten\\FreezedDesk\\Commands\\MediaGetCommand",
+                "desk:media:update": "Neuedaten\\FreezedDesk\\Commands\\MediaUpdateCommand",
+                "desk:media:delete": "Neuedaten\\FreezedDesk\\Commands\\MediaDeleteCommand",
+                "desk:media:usage": "Neuedaten\\FreezedDesk\\Commands\\MediaUsageCommand",
+                "desk:media:prune": "Neuedaten\\FreezedDesk\\Commands\\MediaPruneCommand",
+                "desk:inbox:list": "Neuedaten\\FreezedDesk\\Commands\\InboxListCommand",
+                "desk:inbox:show": "Neuedaten\\FreezedDesk\\Commands\\InboxShowCommand",
+                "desk:inbox:assign": "Neuedaten\\FreezedDesk\\Commands\\InboxAssignCommand",
+                "desk:inbox:set": "Neuedaten\\FreezedDesk\\Commands\\InboxSetCommand",
+                "desk:actions": "Neuedaten\\FreezedDesk\\Commands\\ActionsCommand",
+                "desk:action": "Neuedaten\\FreezedDesk\\Commands\\ActionCommand",
+                "desk:status": "Neuedaten\\FreezedDesk\\Commands\\OverviewCommand",
+                "desk:preview-url": "Neuedaten\\FreezedDesk\\Commands\\PreviewUrlCommand",
+                "desk:outbox": "Neuedaten\\FreezedDesk\\Commands\\OutboxCommand",
+                "desk:outbox:push": "Neuedaten\\FreezedDesk\\Commands\\OutboxPushCommand",
+                "desk:outbox:pull": "Neuedaten\\FreezedDesk\\Commands\\OutboxPullCommand",
+                "desk:outbox:status": "Neuedaten\\FreezedDesk\\Commands\\OutboxStatusCommand",
+                "desk:agent": "Neuedaten\\FreezedDesk\\Commands\\AgentCommand"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
     }
-  ],
-  "license": "MIT",
-  "minimum-stability": "beta",
-  "prefer-stable": true,
-  "require": {
-    "php": "^8.4",
-    "ext-pdo": "*",
-    "ext-pdo_sqlite": "*",
-    "ext-json": "*",
-    "ext-mbstring": "*",
-    "neuedaten/freezed": "^0.14.0-beta",
-    "league/commonmark": "^2.6"
-  },
-  "suggest": {
-    "ext-intl": "Better slug transliteration for non-Latin titles.",
-    "ext-fileinfo": "MIME detection for uploads (strongly recommended).",
-    "ext-curl": "Fetching inbox submissions from a remote endpoint."
-  },
-  "autoload": {
-    "psr-4": {
-      "Neuedaten\\FreezedDesk\\": "Classes"
-    }
-  },
-  "bin": [
-    "bin/freezed-desk"
-  ],
-  "extra": {
-    "freezed": {
-      "commands": {
-        "desk": "Neuedaten\\FreezedDesk\\Commands\\ServeCommand",
-        "desk:migrate": "Neuedaten\\FreezedDesk\\Commands\\MigrateCommand",
-        "desk:show": "Neuedaten\\FreezedDesk\\Commands\\ShowCommand",
-        "desk:export": "Neuedaten\\FreezedDesk\\Commands\\ExportCommand",
-        "desk:import": "Neuedaten\\FreezedDesk\\Commands\\ImportCommand",
-        "desk:seed": "Neuedaten\\FreezedDesk\\Commands\\SeedCommand",
-        "desk:media:check": "Neuedaten\\FreezedDesk\\Commands\\MediaCheckCommand",
-        "desk:inbox": "Neuedaten\\FreezedDesk\\Commands\\InboxCommand",
-        "desk:schema": "Neuedaten\\FreezedDesk\\Commands\\SchemaCommand",
-        "desk:list": "Neuedaten\\FreezedDesk\\Commands\\ListCommand",
-        "desk:get": "Neuedaten\\FreezedDesk\\Commands\\GetCommand",
-        "desk:put": "Neuedaten\\FreezedDesk\\Commands\\PutCommand",
-        "desk:delete": "Neuedaten\\FreezedDesk\\Commands\\DeleteCommand",
-        "desk:publish": "Neuedaten\\FreezedDesk\\Commands\\PublishCommand",
-        "desk:unpublish": "Neuedaten\\FreezedDesk\\Commands\\UnpublishCommand",
-        "desk:archive": "Neuedaten\\FreezedDesk\\Commands\\ArchiveCommand",
-        "desk:media:add": "Neuedaten\\FreezedDesk\\Commands\\MediaAddCommand",
-        "desk:media:list": "Neuedaten\\FreezedDesk\\Commands\\MediaListCommand",
-        "desk:agent": "Neuedaten\\FreezedDesk\\Commands\\AgentCommand"
-      }
-    }
-  }
 }

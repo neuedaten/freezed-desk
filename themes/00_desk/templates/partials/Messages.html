@@ -1,0 +1,1 @@
+<f:if condition="{row.errors} || {row.warnings}"><span class="messages-icon {f:if(condition: row.errors, then: 'messages-icon--error', else: 'messages-icon--warn')}" title="{row.messages}" aria-label="{row.messages}">{f:if(condition: row.errors, then: '!', else: 'i')}</span></f:if>

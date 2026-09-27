@@ -14,7 +14,7 @@
                 <div class="record-main">
                     <f:if condition="{selected}">
                         <div class="card">
-                            <h2 class="card__title">{desk:t(key: 'ui.revision')} #{selected.id} · {desk:date(value: selected.createdAt)} <span class="muted">{selected.note}</span></h2>
+                            <h2 class="card__title">{desk:t(key: 'ui.revision')} {f:if(condition: selected.number, then: selected.number, else: '#{selected.id}')} · {desk:date(value: '{f:if(condition: selected.savedAt, then: selected.savedAt, else: selected.createdAt)}')} <f:render partial="Actor" arguments="{actor: selected.actor}" /></h2>
                             <p class="muted">{desk:t(key: 'ui.diff')}</p>
                             <f:if condition="{diff}">
                                 <f:then>
@@ -38,9 +38,10 @@
                 </div>
                 <aside class="record-side">
                     <div class="card">
+                        <p class="muted">{desk:t(key: 'ui.revision')} {item.revision} · <f:render partial="Actor" arguments="{actor: item.updatedBy}" /> ({desk:t(key: 'ui.now')})</p>
                         <ul class="list list--compact">
                             <f:for each="{revisions}" as="rev">
-                                <li class="{f:if(condition: '{rev.id} == {selected.id}', then: 'is-active')}"><a href="?rev={rev.id}">#{rev.id} · {desk:date(value: rev.createdAt)}</a> <span class="muted">{rev.note}</span></li>
+                                <li class="{f:if(condition: '{rev.id} == {selected.id}', then: 'is-active')}"><a href="?rev={rev.id}">{f:if(condition: rev.number, then: rev.number, else: '#{rev.id}')} · {desk:date(value: '{f:if(condition: rev.savedAt, then: rev.savedAt, else: rev.createdAt)}')}</a> <f:render partial="Actor" arguments="{actor: rev.actor}" /></li>
                             </f:for>
                         </ul>
                     </div>

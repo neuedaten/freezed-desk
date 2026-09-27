@@ -6,6 +6,11 @@
  * exactly these values.
  */
 return [
+    // Name of the project in the header and the browser tab of the UI, so
+    // two desks side by side are not mixed up. Without it: the site's
+    // variables.siteName, else the project folder's name.
+    'projectName' => null,
+
     // Folder for the SQLite database, uploaded media and the JSON export,
     // relative to the project root. The one place in a project with state.
     'dataPath' => 'data',
@@ -26,8 +31,15 @@ return [
     // Form definitions for the inbox module (desk/forms/<name>.php).
     'formsPath' => 'desk/forms',
 
+    // Project Markdown files appended to the agent guide (desk/agent/<topic>.md).
+    'agentPath' => 'desk/agent',
+
     // Project overlays for the desk UI theme (desk/themes/<name>/templates/…).
     'themesPath' => 'desk/themes',
+
+    // A theme shipped with Desk, laid over the plain one ("neuedaten").
+    // null keeps the plain theme. Project overlays still come last.
+    'theme' => null,
 
     // Sub-folder of dataPath for desk:export / desk:import.
     'exportPath' => 'export',
@@ -56,6 +68,24 @@ return [
     // Remote inbox endpoint to fetch submissions from:
     // ['url' => 'https://example.org/api/v1/inbox', 'tokenEnv' => 'DESK_INBOX_TOKEN']
     'inbox' => null,
+
+    // Outbox: messages pushed to a server that publishes them on time
+    // (docs/outbox.md). null disables it.
+    // ['url' => 'https://example.org/api/v1/outbox', 'tokenEnv' => 'DESK_OUTBOX_TOKEN',
+    //  'types' => ['posts'], 'mapper' => Vendor\PostsMapper::class, 'push' => 'ui']
+    'outbox' => null,
+
+    // Extra fields on media files (docs/configuration.md), e.g.
+    // ['socialOk' => ['type' => 'bool', 'label' => 'Social media', 'default' => ['upload' => true, 'import' => false]]]
+    'media' => [
+        'fields' => [],
+    ],
+
+    // Path of ffmpeg, for stills of videos in lists; null shows a placeholder.
+    'ffmpeg' => null,
+
+    // Extensions besides the ones packages declare (class names).
+    'extensions' => [],
 
     // Revisions kept per record. 0 disables revisions.
     'revisions' => 50,

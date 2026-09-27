@@ -1,1 +1,1 @@
-<span class="badge badge--{status}">{desk:t(key: 'ui.status.{status}')}</span>
+<f:comment>Status of a record; for a type with approval by a person, draft/approved/rejected (Grundsatz 5).</f:comment><span class="badge badge--{status}">{f:if(condition: approval, then: '{desk:t(key: \'approval.status.{status}\')}', else: '{desk:t(key: \'ui.status.{status}\')}')}</span>

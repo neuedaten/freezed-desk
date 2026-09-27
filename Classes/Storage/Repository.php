@@ -3,6 +3,8 @@
 namespace Neuedaten\FreezedDesk\Storage;
 
 use Neuedaten\FreezedDesk\DeskContext;
+use Neuedaten\FreezedDesk\Exception\ApprovalException;
+use Neuedaten\FreezedDesk\Exception\ConflictException;
 use Neuedaten\FreezedDesk\Exception\DeskException;
 use Neuedaten\FreezedDesk\Exception\NotFoundException;
 use Neuedaten\FreezedDesk\Exception\ValidationException;
@@ -19,6 +21,11 @@ final class Repository
 {
     /** @var array<int, Item|null> */
     private array $cache = [];
+
+    /** @var string[] */
+    private array $notices = [];
+
+    private bool $lastRejectionsApproval = false;
 
     public function __construct(private readonly DeskContext $context)
     {
@@ -129,32 +136,49 @@ final class Repository
      * current value (on update) or take their default (on create): a form
      * therefore sends every field, a seed file only what it knows.
      *
+     * The actor of the context (A3) is recorded with the change. For a type
+     * with approval: 'ui', only the editor (the UI) may publish: from the
+     * CLI, publishing a draft is refused, and a change to the content of a
+     * published record sends it back to draft (system fields excepted). The
+     * schema's guard always runs, its validate callback when the record is
+     * or stays published (A5).
+     *
      * @param array<string, mixed> $input
      * @param array<string, string|null>|null $timestamps createdAt / updatedAt / publishedAt to keep (import).
      * @param bool $deferRelations Skip the required check on relation fields (first pass of an import).
      * @param bool $validateFields False to skip field validation (a status change to draft or archived).
+     * @param int|null $ifRevision Save only when the record is still at this revision (A4).
      * @throws ValidationException
+     * @throws ApprovalException When the actor may not publish this type.
+     * @throws ConflictException When $ifRevision is outdated.
      */
-    public function save(string $type, array $input, ?int $id = null, string $note = '', ?array $timestamps = null, bool $deferRelations = false, bool $validateFields = true): Item
+    public function save(string $type, array $input, ?int $id = null, string $note = '', ?array $timestamps = null, bool $deferRelations = false, bool $validateFields = true, ?int $ifRevision = null): Item
     {
         if ($this->context->readOnly) {
             throw new DeskException('The desk database is open read-only.');
         }
 
+        $this->notices = [];
+        $actor = $this->context->actor();
         $schema = $this->context->schemas()->get($type);
         $existing = $id === null ? null : $this->require($id);
         if ($existing !== null && $existing->type !== $type) {
             throw new DeskException(sprintf('Record #%d is of type "%s", not "%s".', $id, $existing->type, $type));
         }
+        if ($ifRevision !== null && $existing !== null && $existing->revision !== $ifRevision) {
+            throw new ConflictException($existing, $ifRevision);
+        }
 
         $rawFields = isset($input['fields']) && is_array($input['fields']) ? $input['fields'] : [];
         $errors = [];
 
-        // Fields: normalise what was sent, keep or default the rest.
+        // Fields: normalise what was sent, keep or default the rest. System
+        // fields are never taken from the form.
         $data = [];
         foreach ($schema->fields as $name => $field) {
             $fieldType = $this->context->fieldTypes()->get($field->type);
-            if (array_key_exists($name, $rawFields) && !$field->readonly) {
+            $accepted = array_key_exists($name, $rawFields) && !$field->readonly && !($field->system && $actor->isHuman());
+            if ($accepted) {
                 $data[$name] = $fieldType->normalize($rawFields[$name], $field, $this->context);
             } elseif ($existing !== null && array_key_exists($name, $existing->data)) {
                 $data[$name] = $existing->data[$name];
@@ -216,6 +240,27 @@ final class Repository
             }
         }
 
+        // Approval (A3.3, A3.4): only a person in the UI publishes.
+        if ($schema->needsUiApproval() && !$actor->isHuman() && $actor !== Actor::Import && $status === Status::Published) {
+            if ($existing?->status !== Status::Published) {
+                throw new ApprovalException($this->context->t('approval.refused', ['type' => $schema->labelSingular, 'slug' => $slug]));
+            }
+            if ($this->contentChanged($schema, $existing, $data, $slug, $variant)) {
+                $status = Status::Draft;
+                $this->notices[] = $this->context->t('approval.reset');
+            }
+        }
+
+        // The schema's own rules (A5): the guard always, validate when the
+        // record is to be published or stays published.
+        if ($validateFields) {
+            $validation = $this->context->validation();
+            $errors += $validation->run($schema->guardCallback, $schema, $data, $existing, $status === Status::Published, $actor, $slug);
+            if ($status === Status::Published) {
+                $errors += $validation->run($schema->validateCallback, $schema, $data, $existing, true, $actor, $slug);
+            }
+        }
+
         if ($schema->single && $existing === null) {
             $other = $this->findSingle($type);
             if ($other !== null) {
@@ -241,23 +286,25 @@ final class Repository
 
         $database = $this->context->database();
 
-        return $database->transaction(function () use ($database, $existing, $type, $slug, $variant, $status, $title, $sort, $json, $search, $createdAt, $updatedAt, $publishedAt, $note, $schema, $data): Item {
+        return $database->transaction(function () use ($database, $existing, $type, $slug, $variant, $status, $title, $sort, $json, $search, $createdAt, $updatedAt, $publishedAt, $note, $schema, $data, $actor): Item {
             if ($existing !== null) {
                 $this->storeRevision($existing, $note);
                 $database->execute(
-                    'UPDATE items SET slug = :slug, variant = :variant, status = :status, title = :title, sort = :sort, data = :data, search = :search, created_at = :created, updated_at = :updated, published_at = :published WHERE id = :id',
+                    'UPDATE items SET slug = :slug, variant = :variant, status = :status, title = :title, sort = :sort, data = :data, search = :search, created_at = :created, updated_at = :updated, published_at = :published, revision = :revision, updated_by = :actor WHERE id = :id',
                     [
                         'slug' => $slug, 'variant' => $variant, 'status' => $status->value, 'title' => $title, 'sort' => $sort,
-                        'data' => $json, 'search' => $search, 'created' => $createdAt, 'updated' => $updatedAt, 'published' => $publishedAt, 'id' => $existing->id,
+                        'data' => $json, 'search' => $search, 'created' => $createdAt, 'updated' => $updatedAt, 'published' => $publishedAt,
+                        'revision' => $existing->revision + 1, 'actor' => $actor->value, 'id' => $existing->id,
                     ]
                 );
                 $id = $existing->id;
             } else {
                 $database->execute(
-                    'INSERT INTO items (type, slug, variant, status, title, sort, data, search, created_at, updated_at, published_at) VALUES (:type, :slug, :variant, :status, :title, :sort, :data, :search, :created, :updated, :published)',
+                    'INSERT INTO items (type, slug, variant, status, title, sort, data, search, created_at, updated_at, published_at, revision, updated_by) VALUES (:type, :slug, :variant, :status, :title, :sort, :data, :search, :created, :updated, :published, 1, :actor)',
                     [
                         'type' => $type, 'slug' => $slug, 'variant' => $variant, 'status' => $status->value, 'title' => $title, 'sort' => $sort,
                         'data' => $json, 'search' => $search, 'created' => $createdAt, 'updated' => $updatedAt, 'published' => $publishedAt,
+                        'actor' => $actor->value,
                     ]
                 );
                 $id = $database->lastInsertId();
@@ -271,16 +318,60 @@ final class Repository
     }
 
     /**
+     * Write fields with system: true -- rendered assets, outbox results --
+     * without the checks meant for editorial changes: an approved record
+     * stays approved (A3.4) and a failing validate callback does not stop
+     * the machine from recording what happened. Recorded as "cli" (B2.6),
+     * also when called from the UI process.
+     *
+     * @param array<string, mixed> $fields field => raw value
+     */
+    public function saveSystemFields(int $id, array $fields, string $note = 'system'): Item
+    {
+        $item = $this->require($id);
+        $schema = $this->context->schemas()->get($item->type);
+        foreach (array_keys($fields) as $name) {
+            if (!($schema->field((string) $name)?->system ?? false)) {
+                throw new DeskException(sprintf('Field "%s" of type "%s" is not a system field; saveSystemFields() only writes those.', $name, $item->type));
+            }
+        }
+        $actor = $this->context->actor();
+        if ($actor->isHuman()) {
+            $this->context->actAs(Actor::Cli);
+        }
+        try {
+            return $this->save($item->type, ['fields' => $fields], $item->id, $note, validateFields: false);
+        } finally {
+            $this->context->actAs($actor);
+        }
+    }
+
+    /**
+     * Messages of the last save() that did not stop it, e.g. "sent back to
+     * draft, approve again" (A3.4).
+     *
+     * @return string[]
+     */
+    public function notices(): array
+    {
+        return $this->notices;
+    }
+
+    /**
      * Change the status of records without touching their fields. Publishing
      * validates the record (a page must not be built from a broken record);
-     * setting a record to draft or archived always works.
+     * setting a record to draft or archived always works. Every record is
+     * tried; the ones that could not be changed are listed with the reason
+     * (A5.5).
      *
      * @param int[] $ids
-     * @throws ValidationException When a record cannot be published.
+     * @return array{changed: int[], rejected: array<int, string>} Ids changed, id => reason.
      */
-    public function setStatus(array $ids, Status $status): int
+    public function changeStatus(array $ids, Status $status): array
     {
-        $count = 0;
+        $changed = [];
+        $rejected = [];
+        $this->lastRejectionsApproval = true;
         foreach ($ids as $id) {
             $item = $this->get((int) $id);
             if ($item === null || $item->status === $status) {
@@ -288,13 +379,50 @@ final class Repository
             }
             try {
                 $this->save($item->type, ['status' => $status->value], $item->id, 'status', validateFields: $status === Status::Published);
-            } catch (ValidationException $exception) {
-                throw new ValidationException(['_' => $item->title . ': ' . $exception->getMessage()]);
+                $changed[] = $item->id;
+            } catch (ValidationException | ApprovalException $exception) {
+                $rejected[$item->id] = $item->title . ': ' . $exception->getMessage();
+                $this->lastRejectionsApproval = $this->lastRejectionsApproval && $exception instanceof ApprovalException;
             }
-            $count++;
         }
 
-        return $count;
+        return ['changed' => $changed, 'rejected' => $rejected];
+    }
+
+    /**
+     * changeStatus() for callers that want an exception when a record could
+     * not be changed.
+     *
+     * @param int[] $ids
+     * @throws ValidationException When a record cannot be published.
+     * @throws ApprovalException When publishing is reserved for the UI.
+     */
+    public function setStatus(array $ids, Status $status): int
+    {
+        $result = $this->changeStatus($ids, $status);
+        if ($result['rejected'] !== []) {
+            $message = implode(' ', $result['rejected']);
+            if ($this->lastRejectionsApproval) {
+                throw new ApprovalException($message);
+            }
+            throw new ValidationException(['_' => $message]);
+        }
+
+        return count($result['changed']);
+    }
+
+    /**
+     * A person opened the record in the UI: its current revision counts as
+     * seen (the filter "from the agent, not yet seen", A3.5). Changes
+     * nothing else, not even updated_at.
+     */
+    public function markSeen(int $id): void
+    {
+        if ($this->context->readOnly) {
+            return;
+        }
+        $this->context->database()->execute('UPDATE items SET seen_revision = revision WHERE id = :id AND (seen_revision IS NULL OR seen_revision < revision)', ['id' => $id]);
+        unset($this->cache[$id]);
     }
 
     public function delete(int $id): void
@@ -359,7 +487,12 @@ final class Repository
     // ------------------------------------------------------ revisions ---
 
     /**
-     * @return array<int, array{id: int, createdAt: string, note: string, data: array<string, mixed>}>
+     * Earlier states of a record, newest first. "number" is the revision the
+     * state had (the current record is at $item->revision), "actor" who
+     * produced it, "savedAt" when; "note" and "createdAt" describe the
+     * change that replaced it.
+     *
+     * @return array<int, array{id: int, number: int|null, actor: string, savedAt: string|null, createdAt: string, note: string, data: array<string, mixed>}>
      */
     public function revisions(int $itemId): array
     {
@@ -369,6 +502,9 @@ final class Repository
             $data = json_decode((string) $row['data'], true);
             $revisions[] = [
                 'id' => (int) $row['id'],
+                'number' => isset($row['number']) ? (int) $row['number'] : null,
+                'actor' => (string) ($row['actor'] ?? ''),
+                'savedAt' => isset($row['saved_at']) ? (string) $row['saved_at'] : null,
                 'createdAt' => (string) $row['created_at'],
                 'note' => (string) $row['note'],
                 'data' => is_array($data) ? $data : [],
@@ -378,7 +514,7 @@ final class Repository
         return $revisions;
     }
 
-    /** @return array{id: int, createdAt: string, note: string, data: array<string, mixed>}|null */
+    /** @return array{id: int, number: int|null, actor: string, savedAt: string|null, createdAt: string, note: string, data: array<string, mixed>}|null */
     public function revision(int $itemId, int $revisionId): ?array
     {
         foreach ($this->revisions($itemId) as $revision) {
@@ -390,19 +526,41 @@ final class Repository
         return null;
     }
 
-    public function restoreRevision(int $itemId, int $revisionId): Item
+    /** The kept state with the given revision number, or null. */
+    public function revisionByNumber(int $itemId, int $number): ?array
+    {
+        foreach ($this->revisions($itemId) as $revision) {
+            if ($revision['number'] === $number) {
+                return $revision;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Bring back the fields of an earlier state. From the CLI, a type with
+     * approval: 'ui' keeps its current status (and falls back to draft when
+     * the content changes), so a restore cannot publish.
+     */
+    public function restoreRevision(int $itemId, int $revisionId, ?int $ifRevision = null): Item
     {
         $item = $this->require($itemId);
         $revision = $this->revision($itemId, $revisionId) ?? throw new NotFoundException('Revision #' . $revisionId . ' does not exist.');
         $snapshot = $revision['data'];
+        $schema = $this->context->schemas()->get($item->type);
+        $status = $snapshot['status'] ?? $item->status->value;
+        if ($schema->needsUiApproval() && !$this->context->actor()->isHuman() && $status === Status::Published->value && !$item->isPublished()) {
+            $status = $item->status->value;
+        }
 
         return $this->save($item->type, [
             'slug' => $snapshot['slug'] ?? $item->slug,
             'variant' => $snapshot['variant'] ?? $item->variant,
-            'status' => $snapshot['status'] ?? $item->status->value,
+            'status' => $status,
             'sort' => $snapshot['sort'] ?? $item->sort,
             'fields' => $snapshot['data'] ?? [],
-        ], $item->id, 'restore:' . $revisionId);
+        ], $item->id, 'restore:' . ($revision['number'] ?? $revisionId), ifRevision: $ifRevision);
     }
 
     // ------------------------------------------------------- settings ---
@@ -432,18 +590,44 @@ final class Repository
         }
         $database = $this->context->database();
         $database->execute(
-            'INSERT INTO revisions (item_id, data, created_at, note) VALUES (:item, :data, :created, :note)',
+            'INSERT INTO revisions (item_id, data, created_at, note, number, actor, saved_at) VALUES (:item, :data, :created, :note, :number, :actor, :saved)',
             [
                 'item' => $item->id,
                 'data' => json_encode($item->snapshot(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'created' => Database::now(),
                 'note' => $note,
+                'number' => $item->revision,
+                'actor' => $item->updatedBy,
+                'saved' => $item->updatedAt,
             ]
         );
         $database->execute(
             'DELETE FROM revisions WHERE item_id = :item AND id NOT IN (SELECT id FROM revisions WHERE item_id = :item2 ORDER BY id DESC LIMIT :keep)',
             ['item' => $item->id, 'item2' => $item->id, 'keep' => $keep]
         );
+    }
+
+    /**
+     * Did a change touch the content of a record: any field but the system
+     * fields, the slug or the variant?
+     *
+     * @param array<string, mixed> $data
+     */
+    private function contentChanged(TypeSchema $schema, Item $existing, array $data, string $slug, string $variant): bool
+    {
+        if ($slug !== $existing->slug || $variant !== $existing->variant) {
+            return true;
+        }
+        foreach ($schema->fields as $name => $field) {
+            if ($field->system) {
+                continue;
+            }
+            if (json_encode($data[$name] ?? null) !== json_encode($existing->data[$name] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $data */

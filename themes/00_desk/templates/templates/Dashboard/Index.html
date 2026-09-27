@@ -11,9 +11,10 @@
                     <f:then><div class="tile__meta">{desk:t(key: 'ui.single')}</div></f:then>
                     <f:else>
                         <div class="tile__numbers">
-                            <span><strong>{entry.counts.published}</strong> {desk:t(key: 'ui.status.published')}</span>
-                            <span><strong>{entry.counts.draft}</strong> {desk:t(key: 'ui.status.draft')}</span>
-                            <f:if condition="{entry.counts.archived}"><span><strong>{entry.counts.archived}</strong> {desk:t(key: 'ui.status.archived')}</span></f:if>
+                            <f:variable name="statusKeys">{f:if(condition: entry.schema.approval, then: 'approval.status', else: 'ui.status')}</f:variable>
+                            <span><strong>{entry.counts.published}</strong> {desk:t(key: '{statusKeys}.published')}</span>
+                            <span><strong>{entry.counts.draft}</strong> {desk:t(key: '{statusKeys}.draft')}</span>
+                            <f:if condition="{entry.counts.archived}"><span><strong>{entry.counts.archived}</strong> {desk:t(key: '{statusKeys}.archived')}</span></f:if>
                         </div>
                     </f:else>
                 </f:if>
@@ -32,7 +33,20 @@
         </f:if>
     </div>
 
+    <f:for each="{panels}" as="panel"><f:render partial="{panel.partial}" arguments="{vars: panel.variables, csrfToken: csrfToken}" /></f:for>
+
     <div class="columns">
+        <f:if condition="{unseen}">
+            <section class="card card--unseen">
+                <h2 class="card__title">{desk:t(key: 'ui.unseenCount', params: {count: unseenCount})}</h2>
+                <ul class="list">
+                    <f:for each="{unseen}" as="u">
+                        <li><a href="/types/{u.schema.slug}/{u.item.id}">{u.item.title}</a> <span class="muted">{u.schema.labelSingular} · {desk:date(value: u.item.updatedAt)}</span> <f:render partial="Status" arguments="{status: u.item.status.value, approval: u.schema.approval}" /></li>
+                    </f:for>
+                </ul>
+            </section>
+        </f:if>
+
         <section class="card">
             <h2 class="card__title">{desk:t(key: 'ui.drafts')}</h2>
             <f:if condition="{drafts}">
@@ -53,7 +67,7 @@
                 <f:then>
                     <ul class="list">
                         <f:for each="{recent}" as="r">
-                            <li><a href="/types/{r.schema.slug}/{r.item.id}">{r.item.title}</a> <span class="muted">{r.schema.labelSingular} · {desk:date(value: r.item.updatedAt)}</span> <f:render partial="Status" arguments="{status: r.item.status.value}" /></li>
+                            <li><a href="/types/{r.schema.slug}/{r.item.id}">{r.item.title}</a> <span class="muted">{r.schema.labelSingular} · {desk:date(value: r.item.updatedAt)}</span> <f:render partial="Status" arguments="{status: r.item.status.value, approval: r.schema.approval}" /> <f:render partial="Actor" arguments="{actor: r.item.updatedBy}" /></li>
                         </f:for>
                     </ul>
                 </f:then>

@@ -1,0 +1,28 @@
+<f:for each="{filters}" as="filter">
+    <f:switch expression="{filter.kind}">
+        <f:case value="date">
+            <label class="toolbar__filter">
+                <span class="toolbar__label">{filter.label}</span>
+                <select class="input" name="f[{filter.name}][range]" onchange="this.form.submit()">
+                    <option value="">{desk:t(key: 'ui.filter.any')}</option>
+                    <f:for each="{filter.options}" as="label" key="key">
+                        <option value="{key}" {f:if(condition: '{filter.range} == {key}', then: 'selected')}>{label}</option>
+                    </f:for>
+                </select>
+            </label>
+            <label class="toolbar__filter"><span class="toolbar__label">{desk:t(key: 'ui.filter.from')}</span><input class="input input--date" type="date" name="f[{filter.name}][from]" value="{filter.from}"></label>
+            <label class="toolbar__filter"><span class="toolbar__label">{desk:t(key: 'ui.filter.to')}</span><input class="input input--date" type="date" name="f[{filter.name}][to]" value="{filter.to}"></label>
+        </f:case>
+        <f:defaultCase>
+            <label class="toolbar__filter">
+                <span class="toolbar__label">{filter.label}</span>
+                <select class="input" name="f[{filter.name}]" onchange="this.form.submit()">
+                    <option value="">{desk:t(key: 'ui.filter.any')}</option>
+                    <f:for each="{filter.options}" as="label" key="key">
+                        <option value="{key}" {f:if(condition: '{filter.value} == {key}', then: 'selected')}>{label}</option>
+                    </f:for>
+                </select>
+            </label>
+        </f:defaultCase>
+    </f:switch>
+</f:for>

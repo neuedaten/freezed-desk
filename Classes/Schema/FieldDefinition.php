@@ -46,6 +46,15 @@ final class FieldDefinition
         get => (bool) ($this->options['readonly'] ?? false);
     }
 
+    /**
+     * Written by Desk or a package (rendered assets, outbox results), never
+     * by the form or `put`. Read-only in the UI; a change to it alone does
+     * not send an approved record back to draft (A3.4).
+     */
+    public bool $system {
+        get => (bool) ($this->options['system'] ?? false);
+    }
+
     public ?string $help {
         get => isset($this->options['help']) ? (string) $this->options['help'] : null;
     }

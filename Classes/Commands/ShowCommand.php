@@ -2,6 +2,7 @@
 
 namespace Neuedaten\FreezedDesk\Commands;
 
+use Neuedaten\FreezedDesk\Cli;
 use Neuedaten\Freezed\Services\ConfigService;
 use Neuedaten\Freezed\Services\LogService;
 use Neuedaten\FreezedDesk\DeskContext;
@@ -15,6 +16,11 @@ use Neuedaten\FreezedDesk\Exception\DeskException;
  */
 class ShowCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
         $target = $args[0] ?? '';
@@ -75,7 +81,7 @@ class ShowCommand extends AbstractCommand
         $repository = $context->repository();
         foreach ($context->schemas()->all() as $schema) {
             $counts = $repository->counts($schema->slug);
-            fwrite(STDOUT, sprintf(
+            fwrite(Cli::out(), sprintf(
                 "%-20s %-28s %s%s  draft %d, published %d, archived %d\n",
                 $schema->slug,
                 $schema->label,
@@ -92,16 +98,16 @@ class ShowCommand extends AbstractCommand
     {
         $items = $context->repository()->find($type)->anyStatus()->ordered()->all();
         if ($items === []) {
-            fwrite(STDOUT, "(no records)\n");
+            fwrite(Cli::out(), "(no records)\n");
             return;
         }
         foreach ($items as $item) {
-            fwrite(STDOUT, sprintf("%-6d %-10s %-10s %-30s %s\n", $item->id, $item->status->value, $item->variant, $item->slug, $item->title));
+            fwrite(Cli::out(), sprintf("%-6d %-10s %-10s %-30s %s\n", $item->id, $item->status->value, $item->variant, $item->slug, $item->title));
         }
     }
 
     private function print(array $data): void
     {
-        fwrite(STDOUT, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+        fwrite(Cli::out(), json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     }
 }

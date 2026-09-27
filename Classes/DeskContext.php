@@ -11,8 +11,10 @@ use Neuedaten\FreezedDesk\Inbox\InboxRepository;
 use Neuedaten\FreezedDesk\Media\MediaRepository;
 use Neuedaten\FreezedDesk\Schema\FieldTypeRegistry;
 use Neuedaten\FreezedDesk\Schema\SchemaLoader;
+use Neuedaten\FreezedDesk\Storage\Actor;
 use Neuedaten\FreezedDesk\Storage\Database;
 use Neuedaten\FreezedDesk\Storage\Repository;
+use Neuedaten\FreezedDesk\Validation\Validation;
 
 /**
  * Everything Desk needs at runtime, built lazily from one DeskConfig: the
@@ -36,6 +38,14 @@ final class DeskContext
     private ?Translator $translator = null;
     private ?FormLoader $forms = null;
     private ?InboxRepository $inbox = null;
+    private ?Validation $validation = null;
+    private ?Extensions $extensions = null;
+
+    /** Who writes in this process (A3): the UI sets "editor", the CLI "cli" or "agent". */
+    private Actor $actor = Actor::Cli;
+
+    /** True while a --dry-run command runs: writes happen in a transaction that is rolled back. */
+    private bool $dryRun = false;
 
     /**
      * @param string[] $builtTypes Slugs with a contentTypes entry in the core config.
@@ -158,7 +168,14 @@ final class DeskContext
 
     public function translator(): Translator
     {
-        return $this->translator ??= new Translator((string) $this->config->get('locale', 'de'));
+        if ($this->translator === null) {
+            $this->translator = new Translator((string) $this->config->get('locale', 'de'));
+            foreach ($this->extensions() as $extension) {
+                $this->translator->add($extension->translations($this->translator->locale), $this->translator->locale === 'en' ? [] : $extension->translations('en'));
+            }
+        }
+
+        return $this->translator;
     }
 
     public function t(string $key, array $params = []): string
@@ -174,5 +191,60 @@ final class DeskContext
     public function inbox(): InboxRepository
     {
         return $this->inbox ??= new InboxRepository($this);
+    }
+
+    public function validation(): Validation
+    {
+        return $this->validation ??= new Validation($this);
+    }
+
+    /** Modules and packages that extend Desk (outbox, freezed-desk-social …). */
+    public function extensions(): Extensions
+    {
+        return $this->extensions ??= Extensions::discover($this);
+    }
+
+    public function actor(): Actor
+    {
+        return $this->actor;
+    }
+
+    public function actAs(Actor $actor): void
+    {
+        $this->actor = $actor;
+    }
+
+    public function isDryRun(): bool
+    {
+        return $this->dryRun;
+    }
+
+    /**
+     * Run a change without keeping it: everything the callback writes to the
+     * database happens inside a transaction that is rolled back, file
+     * operations are skipped by the repositories. Returns what the callback
+     * returned, so a command can print the would-be result.
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public function dryRun(callable $callback): mixed
+    {
+        $pdo = $this->database()->pdo();
+        $this->dryRun = true;
+        $pdo->beginTransaction();
+        try {
+            return $callback();
+        } finally {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $this->dryRun = false;
+            // Caches may hold rows that were rolled back.
+            $this->repository = null;
+            $this->media = null;
+            $this->inbox = null;
+        }
     }
 }

@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><f:render section="title" optional="true" /> · {desk:t(key: 'ui.desk')}</title>
+    <title><f:render section="title" optional="true" /> · {projectName} · {desk:t(key: 'ui.desk')}</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/desk.css?v={assetVersion}">
+    <f:render partial="Head" arguments="{_all}" />
 </head>
 <body class="desk" data-csrf="{csrfToken}">
 <header class="topbar">
-    <a class="topbar__brand" href="/">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"/><rect x="3" y="10" width="12" height="3" rx="1" fill="currentColor"/><rect x="3" y="16" width="15" height="3" rx="1" fill="currentColor"/></svg>
-        <span>{desk:t(key: 'ui.desk')}</span>
-    </a>
+    <a class="topbar__brand" href="/"><f:render partial="Brand" arguments="{_all}" /></a>
+    <span class="topbar__project" title="{desk:t(key: 'ui.project', params: {path: projectRoot})}">{projectName}</span>
     <div class="topbar__right">
         <f:if condition="{authUser}"><span class="topbar__user">{desk:t(key: 'ui.loggedInAs', params: {user: authUser})}</span></f:if>
         <button type="button" class="topbar__toggle" data-toggle-nav aria-label="Menu">☰</button>
@@ -48,6 +47,9 @@
         <f:if condition="{inboxEnabled}">
             <a class="sidebar__link {f:if(condition: '{currentPath} == \'/inbox\'', then: 'is-active')}" href="/inbox">{desk:t(key: 'ui.inbox')}</a>
         </f:if>
+        <f:for each="{extensionNavigation}" as="link">
+            <a class="sidebar__link {f:if(condition: '{currentPath} == {link.href}', then: 'is-active')}" href="{link.href}">{link.label}<f:if condition="{link.badge}"> <span class="sidebar__badge sidebar__badge--{link.level}">{link.badge}</span></f:if></a>
+        </f:for>
         <f:if condition="{actions}">
             <a class="sidebar__link {f:if(condition: '{currentPath} == \'/actions\'', then: 'is-active')}" href="/actions">{desk:t(key: 'ui.actions')}</a>
         </f:if>

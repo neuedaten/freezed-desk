@@ -11,7 +11,10 @@
     <div class="record-layout">
         <div class="record-main">
             <div class="card">
-                <f:if condition="{thumb}">
+                <f:if condition="{isVideo}">
+                    <video class="media-video" src="{url}" controls preload="metadata" poster="{thumb}"></video>
+                </f:if>
+                <f:if condition="{thumb} && !{isVideo}">
                     <f:then>
                         <div class="focal-editor" data-focal data-x="{media.focalX}" data-y="{media.focalY}">
                             <img src="{url}" alt="{media.alt}">
@@ -19,7 +22,7 @@
                         </div>
                         <p class="muted">{desk:t(key: 'ui.focalHelp')}</p>
                     </f:then>
-                    <f:else><p><a class="button" href="{url}" target="_blank">{desk:t(key: 'ui.open')}</a></p></f:else>
+                    <f:else><f:if condition="!{isVideo}"><p><a class="button" href="{url}" target="_blank">{desk:t(key: 'ui.open')}</a></p></f:if></f:else>
                 </f:if>
 
                 <form method="post" action="/media/{media.id}" class="fields" data-guard>
@@ -30,9 +33,13 @@
                     <div class="field field--full"><label class="field__label" for="caption">{desk:t(key: 'ui.caption')}</label><div class="field__control"><input class="input" type="text" id="caption" name="caption" value="{media.caption}"></div></div>
                     <div class="field field--half"><label class="field__label" for="credit">{desk:t(key: 'ui.credit')}</label><div class="field__control"><input class="input" type="text" id="credit" name="credit" value="{media.credit}"></div></div>
                     <div class="field field--half"><label class="field__label" for="license">{desk:t(key: 'ui.license')}</label><div class="field__control"><input class="input" type="text" id="license" name="license" value="{media.license}"></div></div>
+                    <f:for each="{extraFields}" as="extraField" key="extraName">
+                        <f:variable name="extraValue" value="{media.extra.{extraName}}" />
+                        <f:render partial="Field" arguments="{field: extraField, name: 'extra[{extraName}]', value: extraValue, id: 'x-{extraName}'}" />
+                    </f:for>
                     <div class="field field--full button-row">
                         <button class="button button--primary">{desk:t(key: 'ui.save')}</button>
-                        <f:if condition="{thumb}"><button type="button" class="button button--ghost" data-focal-reset>{desk:t(key: 'ui.focalReset')}</button></f:if>
+                        <f:if condition="{thumb} && !{isVideo}"><button type="button" class="button button--ghost" data-focal-reset>{desk:t(key: 'ui.focalReset')}</button></f:if>
                     </div>
                 </form>
             </div>
@@ -45,6 +52,8 @@
                     <f:if condition="{media.width}"><dt>{desk:t(key: 'ui.dimensions')}</dt><dd>{media.width} × {media.height}</dd></f:if>
                     <dt>{desk:t(key: 'ui.size')}</dt><dd>{desk:bytes(value: media.size)}</dd>
                     <dt>{desk:t(key: 'ui.createdAt')}</dt><dd>{desk:date(value: media.createdAt)}</dd>
+                    <dt>{desk:t(key: 'media.origin')}</dt><dd>{desk:t(key: 'media.origin.{media.origin}')}</dd>
+                    <f:if condition="{generatedBy}"><dt>{desk:t(key: 'media.generatedBy')}</dt><dd><a href="/types/{generatedBy.type}/{generatedBy.id}">{generatedBy.title}</a> <span class="muted">{media.generatedBy.generator}</span></dd></f:if>
                     <dt>ID</dt><dd>{media.id}</dd>
                 </dl>
                 <p class="muted">Template:<br><code>{snippet}</code></p>

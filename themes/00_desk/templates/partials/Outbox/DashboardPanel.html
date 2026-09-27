@@ -1,0 +1,14 @@
+<f:if condition="{vars.outboxProblems} || {vars.outboxLate} || {vars.outboxExpiring}">
+    <section class="card card--alert">
+        <h2 class="card__title"><a href="/outbox">{desk:t(key: 'outbox.title')}</a> · {desk:t(key: 'outbox.problems')}</h2>
+        <f:if condition="{vars.outboxLate}"><p class="field__error">{desk:t(key: 'outbox.serverLate')}</p></f:if>
+        <f:for each="{vars.outboxExpiring}" as="expiring"><p class="field__error">{desk:t(key: 'outbox.tokenExpiring', params: {channel: expiring.channel, date: '{desk:date(value: expiring.expiresAt, format: \'d.m.Y\')}'})}</p></f:for>
+        <f:if condition="{vars.outboxProblems}">
+            <ul class="list list--compact">
+                <f:for each="{vars.outboxProblems}" as="message">
+                    <li><code>{message.key}</code> <span class="badge badge--outbox-{message.state}">{desk:t(key: 'outbox.state.{message.state}')}</span> <span class="muted">{message.error}</span></li>
+                </f:for>
+            </ul>
+        </f:if>
+    </section>
+</f:if>

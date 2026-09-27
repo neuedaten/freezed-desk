@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="ND">
+  <!-- NEUEDATEN ND-Monogramm, Grundfassung (Entwurf 01, 30.08.2026).
+       ND = Source Sans 3 Black als Pfade, Grad 64/128, Laufweite -0.02em,
+       Lime #d1f43a auf Violett #6342f4, Versalhöhe zentriert. -->
+  <rect width="128" height="128" fill="#6342f4"/>
+  <g transform="translate(21.696,85.120) scale(0.064000,-0.064000)" fill="#d1f43a"><path d="M72 0V650H248L392 360Q409 327 424.0 289.5Q439 252 454 214H458Q452 267 444.0 334.5Q436 402 436 462V650H600V0H424L280 290Q264 323 248.5 361.0Q233 399 218 436H214Q220 381 228.0 314.5Q236 248 236 188V0Z"/><path transform="translate(652.0,0)" d="M72 0V650H264Q363 650 438.5 617.5Q514 585 556.0 514.0Q598 443 598 328Q598 213 556.0 140.5Q514 68 441.0 34.0Q368 0 274 0ZM244 138H254Q301 138 339.0 154.0Q377 170 399.5 211.0Q422 252 422 328Q422 404 399.5 443.5Q377 483 339.0 497.5Q301 512 254 512H244Z"/></g>
+</svg>

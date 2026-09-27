@@ -60,6 +60,12 @@ final class Desk
         return DeskContext::get()->repository();
     }
 
+    /** The media library, e.g. for addGenerated() in a package (A8.5). */
+    public static function media(): \Neuedaten\FreezedDesk\Media\MediaRepository
+    {
+        return DeskContext::get()->media();
+    }
+
     public static function context(): DeskContext
     {
         return DeskContext::get();

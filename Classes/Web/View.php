@@ -68,14 +68,26 @@ final class View
     }
 
     /**
-     * Theme folders in priority order: the package theme, then the
-     * project's overlays.
+     * Theme folders in priority order: the package theme, the theme chosen
+     * with desk.theme, then the project's overlays.
      *
      * @return string[]
      */
     public function themeRoots(): array
     {
         $roots = [dirname(__DIR__, 2) . '/themes/00_desk'];
+        // Extensions add their pages and partials; a theme and the project
+        // still override them.
+        foreach ($this->context->extensions() as $extension) {
+            $root = $extension->themeRoot();
+            if ($root !== null && is_dir($root)) {
+                $roots[] = $root;
+            }
+        }
+        $packageTheme = $this->context->config->packageThemePath();
+        if ($packageTheme !== null) {
+            $roots[] = $packageTheme;
+        }
         $overlayRoot = $this->context->config->themesPath();
         foreach (glob($overlayRoot . '/*', GLOB_ONLYDIR) ?: [] as $directory) {
             $roots[] = $directory;

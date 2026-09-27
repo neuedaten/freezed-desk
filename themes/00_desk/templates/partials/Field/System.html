@@ -1,0 +1,26 @@
+<f:comment>A field only the system writes (system: true): shown, never sent with the form.</f:comment>
+<f:switch expression="{field.type}">
+    <f:case value="files"><f:render section="media" arguments="{value: value}" /></f:case>
+    <f:case value="images"><f:render section="media" arguments="{value: value}" /></f:case>
+    <f:case value="image"><f:if condition="{value}"><f:render section="media" arguments="{value: {0: value}}" /></f:if></f:case>
+    <f:defaultCase>
+        <f:if condition="{value}">
+            <f:then><pre class="field__system" id="{id}">{desk:json(value: value)}</pre></f:then>
+            <f:else><span class="muted">–</span></f:else>
+        </f:if>
+    </f:defaultCase>
+</f:switch>
+
+<f:section name="media">
+    <div class="media-grid media-grid--small">
+        <f:for each="{value}" as="mediaId">
+            <f:variable name="m" value="{desk:media(id: mediaId)}" />
+            <f:if condition="{m}">
+                <a class="media-card media-card--link" href="/media/{m.id}" target="_blank">
+                    <f:if condition="{m.thumb}"><f:then><img src="{m.thumb}" alt="{m.alt}" loading="lazy"></f:then><f:else><div class="media-card__file">{m.name}</div></f:else></f:if>
+                    <div class="media-card__meta">{m.name}</div>
+                </a>
+            </f:if>
+        </f:for>
+    </div>
+</f:section>

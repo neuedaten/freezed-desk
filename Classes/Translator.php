@@ -21,6 +21,18 @@ final class Translator
     }
 
     /**
+     * Add the strings of an extension; keys Desk already has stay Desk's.
+     *
+     * @param array<string, string> $strings
+     * @param array<string, string> $fallback English strings of the extension.
+     */
+    public function add(array $strings, array $fallback = []): void
+    {
+        $this->strings += $strings;
+        $this->fallback += $fallback;
+    }
+
+    /**
      * @param array<string, scalar|null> $params Replaces {name} placeholders.
      */
     public function t(string $key, array $params = []): string

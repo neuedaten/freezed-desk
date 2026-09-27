@@ -4,6 +4,7 @@ namespace Neuedaten\FreezedDesk\Commands;
 
 use Neuedaten\Freezed\Services\LogService;
 use Neuedaten\FreezedDesk\DeskContext;
+use Neuedaten\FreezedDesk\Storage\Actor;
 use Neuedaten\FreezedDesk\Exception\DeskException;
 use Neuedaten\FreezedDesk\Exception\ValidationException;
 use Neuedaten\FreezedDesk\Schema\Slugger;
@@ -34,8 +35,15 @@ use Neuedaten\FreezedDesk\Schema\Slugger;
  */
 class SeedCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
+        // Restoring data, not an editorial change: approved records stay approved (A3).
+        $context->actAs(Actor::Import);
         $file = $args[0] ?? throw new DeskException('Usage: freezed-desk seed <file.json>');
         if (!is_file($file)) {
             throw new DeskException('Seed file not found: ' . $file);
@@ -67,7 +75,8 @@ class SeedCommand extends AbstractCommand
                 'credit' => $entry['credit'] ?? '',
                 'license' => $entry['license'] ?? '',
                 'focal' => $entry['focal'] ?? null,
-            ], move: false);
+                'extra' => is_array($entry['extra'] ?? null) ? $entry['extra'] : [],
+            ], move: false, origin: in_array($entry['origin'] ?? null, ['upload', 'import'], true) ? $entry['origin'] : 'upload');
             if ($existing !== null || isset($entry['alt'], $entry['caption'], $entry['credit'], $entry['license'], $entry['focal'])) {
                 $media = $context->media()->update($media->id, array_intersect_key($entry, array_flip(['alt', 'caption', 'credit', 'license', 'focal'])));
             }

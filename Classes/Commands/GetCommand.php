@@ -11,8 +11,9 @@ use Neuedaten\FreezedDesk\Storage\Item;
 /**
  * `freezed-desk get <type>/<slug>` — one record as JSON in the portable
  * form (fields as stored, relations as {type, slug}, media as {file}); the
- * same shape `put` accepts and `export` writes. --export prints the
- * template variables instead.
+ * same shape `put` accepts and `export` writes, plus `revision` (for
+ * `put --if-revision:`), `updatedBy` and `validation` (messages of the
+ * schema's checks, A5.4). --export prints the template variables instead.
  */
 class GetCommand extends AbstractCommand
 {
@@ -48,11 +49,10 @@ class GetCommand extends AbstractCommand
     }
 
     /** @return array<string, mixed> */
-    public static function portable(DeskContext $context, Item $item): array
+    public static function portable(DeskContext $context, Item $item, bool $withValidation = true): array
     {
         $schema = $context->schemas()->get($item->type);
-
-        return [
+        $record = [
             'id' => $item->id,
             'type' => $item->type,
             'slug' => $item->slug,
@@ -60,10 +60,22 @@ class GetCommand extends AbstractCommand
             'variant' => $item->variant,
             'status' => $item->status->value,
             'sort' => $item->sort,
+            'revision' => $item->revision,
+            'updatedBy' => $item->updatedBy,
             'createdAt' => $item->createdAt,
             'updatedAt' => $item->updatedAt,
             'publishedAt' => $item->publishedAt,
             'fields' => (new Portable($context))->fromStored($schema, $item->data),
         ];
+        if ($withValidation) {
+            $validation = $context->validation()->ofItem($item);
+            $record['validation'] = [
+                'errors' => (object) $validation['errors'],
+                'warnings' => (object) $validation['warnings'],
+                'blocking' => $validation['blocking'],
+            ];
+        }
+
+        return $record;
     }
 }

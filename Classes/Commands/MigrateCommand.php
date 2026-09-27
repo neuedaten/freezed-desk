@@ -11,6 +11,11 @@ use Neuedaten\FreezedDesk\DeskContext;
  */
 class MigrateCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
         $log = LogService::getInstance();

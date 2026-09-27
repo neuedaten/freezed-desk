@@ -1,0 +1,97 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'outbox.title')}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <h1>{desk:t(key: 'outbox.title')}</h1>
+            <p class="muted">{desk:t(key: 'outbox.lastPush')}: <f:if condition="{outboxStatus.lastPush}"><f:then>{desk:date(value: outboxStatus.lastPush.at)}</f:then><f:else>{desk:t(key: 'ui.never')}</f:else></f:if>
+                · {desk:t(key: 'outbox.lastPull')}: <f:if condition="{outboxStatus.lastPull}"><f:then>{desk:date(value: outboxStatus.lastPull)}</f:then><f:else>{desk:t(key: 'ui.never')}</f:else></f:if></p>
+        </div>
+        <div class="page-header__actions">
+            <form method="post" action="/outbox/pull" class="inline">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <button class="button">{desk:t(key: 'outbox.pull')}</button>
+            </form>
+            <form method="post" action="/outbox/push" class="inline" data-confirm="{desk:t(key: 'outbox.sendConfirm', params: {count: toSend})}">
+                <input type="hidden" name="_token" value="{csrfToken}">
+                <button class="button button--primary" {f:if(condition: '{toSend} == 0', then: 'disabled')} title="{desk:t(key: 'outbox.sendHelp')}">{desk:t(key: 'outbox.send')} ({toSend})</button>
+            </form>
+        </div>
+    </div>
+
+    <f:if condition="{outboxStatus.health.timer.late}"><div class="flash flash--error">{desk:t(key: 'outbox.serverLate')}</div></f:if>
+    <f:if condition="{planError}"><div class="flash flash--error">{planError}</div></f:if>
+
+    <section class="card">
+        <h2 class="card__title">{desk:t(key: 'outbox.toSend')}</h2>
+        <p class="muted">{desk:t(key: 'outbox.sendHelp')}</p>
+        <f:if condition="{plan}">
+            <f:then>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>{desk:t(key: 'outbox.at')}</th><th>{desk:t(key: 'outbox.channel')}</th><th>{desk:t(key: 'outbox.record')}</th><th></th></tr></thead>
+                        <tbody>
+                            <f:for each="{plan}" as="entry">
+                                <tr>
+                                    <td>{desk:date(value: entry.at)}</td>
+                                    <td>{entry.label}</td>
+                                    <td><f:if condition="{entry.record}"><f:then><a href="/types/{entry.record.type}/{entry.record.id}">{entry.record.title}</a></f:then><f:else><code>{entry.key}</code></f:else></f:if></td>
+                                    <td><span class="badge badge--plan-{entry.action}">{desk:t(key: 'outbox.plan.{entry.action}')}</span>
+                                        <f:for each="{entry.problems}" as="problem"><div class="field__error">{problem}</div></f:for></td>
+                                </tr>
+                            </f:for>
+                        </tbody>
+                    </table>
+                </div>
+            </f:then>
+            <f:else><p class="muted">{desk:t(key: 'outbox.nothingToSend')}</p></f:else>
+        </f:if>
+    </section>
+
+    <section class="card">
+        <h2 class="card__title">{desk:t(key: 'outbox.state')}</h2>
+        <f:if condition="{messages}">
+            <f:then>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>{desk:t(key: 'outbox.at')}</th><th>{desk:t(key: 'outbox.channel')}</th><th>{desk:t(key: 'outbox.record')}</th><th>{desk:t(key: 'outbox.state')}</th><th></th></tr></thead>
+                        <tbody>
+                            <f:for each="{messages}" as="message">
+                                <tr class="outbox-row outbox-row--{message.state}">
+                                    <td>{desk:date(value: message.at)}</td>
+                                    <td>{message.label}</td>
+                                    <td><f:if condition="{message.record}"><f:then><a href="/types/{message.record.type}/{message.record.id}">{message.record.title}</a></f:then><f:else><code>{message.key}</code></f:else></f:if></td>
+                                    <td>
+                                        <span class="badge badge--outbox-{message.state}">{desk:t(key: 'outbox.state.{message.state}')}</span>
+                                        <f:if condition="{message.url}"> <a href="{message.url}" target="_blank" rel="noopener">↗</a></f:if>
+                                        <f:if condition="{message.error}"><div class="field__error">{message.error}</div></f:if>
+                                        <f:if condition="{message.notice}"><div class="field__help">{message.notice}</div></f:if>
+                                    </td>
+                                    <td>
+                                        <f:if condition="{message.state} == 'unknown'">
+                                            <details class="resolve">
+                                                <summary class="button button--small">{desk:t(key: 'outbox.resolve')}</summary>
+                                                <form method="post" action="/outbox/resolve" class="resolve__form">
+                                                    <input type="hidden" name="_token" value="{csrfToken}">
+                                                    <input type="hidden" name="key" value="{message.key}">
+                                                    <p class="muted">{desk:t(key: 'outbox.resolveHelp')}</p>
+                                                    <input class="input" type="url" name="url" placeholder="{desk:t(key: 'outbox.resolve.url')}">
+                                                    <div class="button-row">
+                                                        <button class="button button--small" name="state" value="sent">{desk:t(key: 'outbox.resolve.sent')}</button>
+                                                        <button class="button button--small" name="state" value="failed">{desk:t(key: 'outbox.resolve.failed')}</button>
+                                                        <button class="button button--small" name="state" value="queued">{desk:t(key: 'outbox.resolve.queued')}</button>
+                                                    </div>
+                                                </form>
+                                            </details>
+                                        </f:if>
+                                    </td>
+                                </tr>
+                            </f:for>
+                        </tbody>
+                    </table>
+                </div>
+            </f:then>
+            <f:else><p class="muted">{desk:t(key: 'outbox.none')}</p></f:else>
+        </f:if>
+    </section>
+</f:section>

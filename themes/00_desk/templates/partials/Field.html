@@ -3,9 +3,13 @@
         {field.label}<f:if condition="{field.required}"><span class="field__required" title="required">*</span></f:if>
         <f:if condition="{field.internal}"><span class="field__flag">{desk:t(key: 'ui.internal')}</span></f:if>
         <f:if condition="{field.readonly}"><span class="field__flag">{desk:t(key: 'ui.readonly')}</span></f:if>
+        <f:if condition="{field.system}"><span class="field__flag">{desk:t(key: 'ui.system')}</span></f:if>
     </label>
     <div class="field__control">
-        <f:render partial="Field/{field.type}" arguments="{field: field, name: name, value: value, id: id}" />
+        <f:if condition="{field.system}">
+            <f:then><f:render partial="Field/System" arguments="{field: field, value: value, id: id}" /></f:then>
+            <f:else><f:render partial="Field/{field.type}" arguments="{field: field, name: name, value: value, id: id}" /></f:else>
+        </f:if>
     </div>
     <f:if condition="{error}"><div class="field__error">{error}</div></f:if>
     <f:if condition="{field.help}"><div class="field__help">{field.help}</div></f:if>

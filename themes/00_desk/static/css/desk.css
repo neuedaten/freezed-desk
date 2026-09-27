@@ -72,6 +72,7 @@ h2 { font-size: 1.05rem; margin: 0; font-weight: 600; }
 }
 .topbar__brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text); }
 .topbar__right { display: flex; align-items: center; gap: 12px; }
+.topbar__project { margin-right: auto; margin-left: 14px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-weight: 600; font-size: .9rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .topbar__user { color: var(--muted); font-size: .9rem; }
 .topbar__toggle { display: none; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; color: var(--text); }
 .shell { display: grid; grid-template-columns: var(--sidebar) 1fr; min-height: calc(100vh - 48px); }
@@ -309,3 +310,63 @@ select.input { appearance: auto; }
 .modal__header .input { flex: 1; }
 .modal__grid { padding: 16px; overflow-y: auto; min-height: 240px; }
 .modal__footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+
+/* 0.2: actors, messages, list views, conflicts, outbox */
+.actor { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: .72rem; font-weight: 600; background: var(--line); color: var(--muted); vertical-align: middle; }
+.actor--agent { background: var(--warn-soft); color: var(--warn); }
+.actor--editor { background: var(--success-soft); color: var(--success); }
+.is-unseen td:first-child, .record-card.is-unseen { box-shadow: inset 3px 0 0 var(--warn); }
+.messages-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: .72rem; font-weight: 700; cursor: help; vertical-align: middle; }
+.messages-icon--error { background: var(--danger-soft); color: var(--danger); }
+.messages-icon--warn { background: var(--warn-soft); color: var(--warn); }
+.messages { margin: 0 0 8px; padding-left: 18px; }
+.messages li { margin: 2px 0; }
+.messages--error a { color: var(--danger); }
+.messages--warn a { color: var(--warn); }
+.card--messages { border-color: var(--warn); }
+.card--conflict { border-color: var(--danger); background: var(--danger-soft); }
+.card--alert { border-color: var(--danger); }
+.card--unseen { border-color: var(--warn); }
+.segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+.segmented__item { padding: 6px 12px; color: var(--text); font-size: .9rem; border-right: 1px solid var(--line-strong); }
+.segmented__item:last-child { border-right: 0; }
+.segmented__item.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.segmented__item:hover { text-decoration: none; background: var(--bg); }
+.toolbar__filter { display: inline-flex; flex-direction: column; gap: 2px; }
+.toolbar__label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.toolbar .toolbar__filter .input { min-width: 140px; }
+.record-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.record-cards--agenda { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.record-card { position: relative; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.record-card__check { position: absolute; top: 8px; left: 8px; z-index: 2; background: var(--panel); border-radius: 4px; padding: 2px 4px; }
+.record-card__image { display: block; aspect-ratio: 4 / 5; background: var(--line); }
+.record-card__image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.record-card__placeholder { display: flex; height: 100%; align-items: center; justify-content: center; color: var(--muted); font-size: .85rem; }
+.record-card__body { padding: 10px 12px; display: grid; gap: 4px; font-size: .88rem; }
+.record-card__head { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+.record-card__title { font-weight: 650; color: var(--text); }
+.record-card__meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: .8rem; }
+.record-card__field { color: var(--text); font-size: .82rem; }
+.agenda { display: grid; gap: 18px; }
+.agenda__date { font-size: .95rem; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.field__system { max-height: 260px; overflow: auto; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; font-size: .8rem; }
+.sidebar__badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; font-size: .72rem; font-weight: 700; text-align: center; background: var(--line); color: var(--muted); }
+.sidebar__badge--error { background: var(--danger-soft); color: var(--danger); }
+.badge--outbox-pending, .badge--plan-push { background: var(--accent-soft); color: var(--accent); }
+.badge--outbox-queued { background: var(--accent-soft); color: var(--accent); }
+.badge--outbox-sending { background: var(--warn-soft); color: var(--warn); }
+.badge--outbox-sent { background: var(--success-soft); color: var(--success); }
+.badge--outbox-failed, .badge--plan-problem { background: var(--danger-soft); color: var(--danger); }
+.badge--outbox-unknown { background: var(--danger); color: #fff; }
+.badge--outbox-withdrawn, .badge--plan-withdraw, .badge--plan-late, .badge--plan-frozen { background: var(--line); color: var(--muted); }
+.resolve summary { list-style: none; cursor: pointer; }
+.resolve__form { display: grid; gap: 8px; margin-top: 8px; min-width: 260px; }
+.media-video { display: block; max-width: 100%; max-height: 60vh; margin-bottom: 8px; border-radius: 6px; background: #000; }
+.output--small { max-height: 260px; }
+/* The agenda is a list to decide on: a row per post, the preview small. */
+.record-cards--agenda { grid-template-columns: 1fr; gap: 8px; }
+.record-cards--agenda .record-card { flex-direction: row; align-items: stretch; }
+.record-cards--agenda .record-card__image { flex: 0 0 96px; aspect-ratio: 4 / 5; }
+.record-cards--agenda .record-card__check { top: 6px; left: 6px; }
+.record-cards--agenda .record-card__body { flex: 1; align-content: start; }
+.toolbar .toolbar__filter .input--date { min-width: 0; width: 150px; }

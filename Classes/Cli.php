@@ -3,11 +3,13 @@
 namespace Neuedaten\FreezedDesk;
 
 use Neuedaten\Freezed\Exception\PathNotAllowedException;
+use Neuedaten\Freezed\Services\CommandRegistryService;
 use Neuedaten\Freezed\Services\ConfigService;
 use Neuedaten\Freezed\Services\LogService;
 use Neuedaten\Freezed\Services\ProjectPathsService;
 use Neuedaten\FreezedDesk\Commands\CommandInterface;
 use Neuedaten\FreezedDesk\Config\DeskConfig;
+use Neuedaten\FreezedDesk\Exception\ConflictException;
 use Neuedaten\FreezedDesk\Exception\DeskException;
 use Neuedaten\FreezedDesk\Exception\ValidationException;
 
@@ -34,26 +36,67 @@ final class Cli
         'seed' => Commands\SeedCommand::class,
         'media:check' => Commands\MediaCheckCommand::class,
         'inbox' => Commands\InboxCommand::class,
-        // JSON interface, for scripts and agents (docs/agents.md).
+        // JSON interface, for scripts and agents (docs/agents.md, docs/cli.md).
         'schema' => Commands\SchemaCommand::class,
         'list' => Commands\ListCommand::class,
         'get' => Commands\GetCommand::class,
         'put' => Commands\PutCommand::class,
+        'validate' => Commands\ValidateCommand::class,
+        'refs' => Commands\RefsCommand::class,
+        'revisions' => Commands\RevisionsCommand::class,
+        'revision' => Commands\RevisionCommand::class,
+        'restore' => Commands\RestoreCommand::class,
         'delete' => Commands\DeleteCommand::class,
         'publish' => Commands\PublishCommand::class,
         'unpublish' => Commands\UnpublishCommand::class,
         'archive' => Commands\ArchiveCommand::class,
+        'reorder' => Commands\ReorderCommand::class,
         'media:add' => Commands\MediaAddCommand::class,
         'media:list' => Commands\MediaListCommand::class,
+        'media:get' => Commands\MediaGetCommand::class,
+        'media:update' => Commands\MediaUpdateCommand::class,
+        'media:delete' => Commands\MediaDeleteCommand::class,
+        'media:usage' => Commands\MediaUsageCommand::class,
+        'media:prune' => Commands\MediaPruneCommand::class,
+        'inbox:list' => Commands\InboxListCommand::class,
+        'inbox:show' => Commands\InboxShowCommand::class,
+        'inbox:assign' => Commands\InboxAssignCommand::class,
+        'inbox:set' => Commands\InboxSetCommand::class,
+        'actions' => Commands\ActionsCommand::class,
+        'action' => Commands\ActionCommand::class,
+        'status' => Commands\OverviewCommand::class,
+        'preview-url' => Commands\PreviewUrlCommand::class,
+        'outbox' => Commands\OutboxCommand::class,
+        'outbox:push' => Commands\OutboxPushCommand::class,
+        'outbox:pull' => Commands\OutboxPullCommand::class,
+        'outbox:status' => Commands\OutboxStatusCommand::class,
         'agent' => Commands\AgentCommand::class,
     ];
 
     /** Commands that answer in JSON; their errors are JSON too. */
-    public const JSON_COMMANDS = ['schema', 'list', 'get', 'put', 'delete', 'publish', 'unpublish', 'archive', 'media:add', 'media:list'];
+    public const JSON_COMMANDS = [
+        'schema', 'list', 'get', 'put', 'validate', 'refs', 'revisions', 'revision', 'restore', 'delete', 'publish', 'unpublish', 'archive', 'reorder',
+        'media:add', 'media:list', 'media:get', 'media:update', 'media:delete', 'media:usage', 'media:prune',
+        'inbox:list', 'inbox:show', 'inbox:assign', 'inbox:set', 'actions', 'status', 'preview-url',
+        'outbox', 'outbox:push', 'outbox:pull', 'outbox:status',
+    ];
+
+    /** The raw arguments of the freezed-desk binary, for repeatable options (Commands\Options). */
+    public static array $argv = [];
+
+    /** @var resource|null Where commands print; tests capture it. */
+    public static $stdout = null;
+
+    /** @return resource */
+    public static function out()
+    {
+        return self::$stdout ?? STDOUT;
+    }
 
     /** @param string[] $argv */
     public static function run(array $argv): int
     {
+        self::$argv = array_values(array_filter(array_slice($argv, 1), static fn (string $arg): bool => str_starts_with($arg, '--')));
         $positional = [];
         $options = self::parseOptions(array_slice($argv, 1), $positional);
 
@@ -61,28 +104,43 @@ final class Cli
         $command = preg_replace('/^desk:?/', '', $command) ?: 'serve';
 
         if (in_array($command, ['help', '-h', '--help'], true) || isset($options['help'])) {
-            fwrite(STDOUT, self::help());
+            fwrite(Cli::out(), self::help());
             return 0;
         }
         if (in_array($command, ['version', '-V', '--version'], true) || isset($options['version'])) {
-            fwrite(STDOUT, 'Freezed Desk ' . self::version() . PHP_EOL);
+            fwrite(Cli::out(), 'Freezed Desk ' . self::version() . PHP_EOL);
             return 0;
         }
 
-        if (!isset(self::COMMANDS[$command])) {
-            fwrite(STDERR, 'freezed-desk: unknown command "' . $command . '". Run freezed-desk help.' . PHP_EOL);
-            return 1;
-        }
-
-        $json = isset($options['json']) || in_array($command, self::JSON_COMMANDS, true);
+        $json = isset($options['json']) || in_array($command, self::JSON_COMMANDS, true) || str_contains($command, ':');
 
         try {
             self::loadProject($options);
-            $class = self::COMMANDS[$command];
+            $class = self::COMMANDS[$command] ?? null;
+            if ($class === null) {
+                // Commands of packages (desk:social:plan …) are registered with
+                // the core; the freezed-desk binary finds them there too.
+                $registered = CommandRegistryService::getInstance()->get('desk:' . $command);
+                if ($registered === null) {
+                    fwrite(STDERR, 'freezed-desk: unknown command "' . $command . '". Run freezed-desk help.' . PHP_EOL);
+
+                    return 1;
+                }
+
+                return $registered->execute($positional, $options);
+            }
             /** @var CommandInterface $instance */
             $instance = new $class();
 
             return $instance->execute($positional, $options);
+        } catch (ConflictException $exception) {
+            if ($json) {
+                fwrite(Cli::out(), json_encode(['error' => $exception->getMessage(), 'current' => Commands\GetCommand::portable(DeskContext::get(), $exception->current)], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+
+                return 1;
+            }
+
+            return self::fail($exception, $json);
         } catch (DeskException | PathNotAllowedException $exception) {
             return self::fail($exception, $json);
         }
@@ -99,7 +157,7 @@ final class Cli
             if ($exception instanceof ValidationException) {
                 $payload['errors'] = $exception->errors;
             }
-            fwrite(STDOUT, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+            fwrite(Cli::out(), json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
         } else {
             LogService::getInstance()->error($exception->getMessage());
         }
@@ -178,7 +236,7 @@ final class Cli
         $configService->setValue('[cli]', [
             'php' => PHP_BINARY,
             'bin' => self::coreBinary($projectRoot),
-            'optionArgs' => [],
+            'optionArgs' => self::$argv,
         ]);
 
         LogService::getInstance()->configureFromBuildConfig($options, $projectRoot);
@@ -274,20 +332,41 @@ Commands:
                     records whose file is gone.
   inbox             Fetch submissions from the configured inbox endpoint.
 
-JSON interface (for scripts and agents, see docs/agents.md):
-  agent             Print a guide to this project's desk for an agent.
+JSON interface (for scripts and agents, see docs/cli.md and docs/agents.md):
+  agent [<topic>]   Print the guide to this project's desk for an agent.
+                    --json structured, --topics lists the topics.
   schema [<type>]   The schema as JSON.
-  list <type>       Records of a type as JSON. --status:, --q:, --limit:
-  get <type>/<slug> A record as JSON (fields as stored, relations by slug,
-                    media by file). --export prints the template variables.
+  list <type>       Records of a type. --status:, --q:, --where:field=value
+                    (repeatable), --from:, --to:, --range:, --order:,
+                    --referencing:<type>/<slug>, --by:, --unseen, --fields:,
+                    --validation, --limit:, --offset:
+  get <type>/<slug> A record as JSON with revision and validation.
+                    --export prints the template variables.
   put <type>[/<slug>]
                     Create or update a record from JSON on stdin or --file:.
-                    Only the given fields change.
-  delete, publish, unpublish, archive <type>/<slug>
-  media:add <file>  Add a file to the library. --alt:, --caption:, --credit:, --license:
-  media:list        The library as JSON. --q:, --kind:images|files
-  help, --help      Show this help.
-  version           Show the version.
+                    Only the given fields change. --if-revision:<n>
+  validate <type>/<slug> [--publishing]
+  refs <type>/<slug>
+  revisions <type>/<slug>, revision <type>/<slug> <n> [--diff],
+  restore <type>/<slug> <n>
+  publish, unpublish, archive, delete <type>/<slug> … | <type> --where:…
+  reorder <type> <slug> <slug> …
+  media:add <file>  Add a file to the library. --alt:, --caption:, --credit:,
+                    --license:, --focal:x,y, --extra:{…}
+  media:list        The library. --q:, --kind:, --origin:, --where:, --unused
+  media:get, media:usage, media:update, media:delete <id|file>
+  media:prune --generated [--older-than:90d]
+  inbox:list, inbox:show <id>, inbox:assign <id> <type>/<slug>,
+  inbox:set <id> --status: --note:
+  actions, action <name>, action <type>/<slug> <name>
+  status            The overview as JSON.
+  preview-url <type>/<slug>
+  outbox push|pull|status
+                    The outbox (docs/outbox.md). push may be reserved for
+                    the UI (desk.outbox.push).
+
+Commands that change something take --dry-run. The CLI acts as "cli", or
+as "agent" with --actor:agent or DESK_ACTOR=agent (docs/approval.md).
 
 Options:
   --json            Errors as JSON on stdout (the JSON commands do this anyway).
@@ -297,6 +376,7 @@ Options:
 
 Environment:
   FREEZED_ROOT      Override the project root directory.
+  DESK_ACTOR        "agent" records changes as the agent's (default "cli").
 
 TXT;
     }

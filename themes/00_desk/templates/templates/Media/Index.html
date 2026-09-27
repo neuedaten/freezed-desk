@@ -18,7 +18,14 @@
         <select class="input" name="kind" onchange="this.form.submit()">
             <option value="all" {f:if(condition: '{kind} == \'all\'', then: 'selected')}>{desk:t(key: 'ui.all')}</option>
             <option value="images" {f:if(condition: '{kind} == \'images\'', then: 'selected')}>{desk:t(key: 'ui.images')}</option>
+            <option value="videos" {f:if(condition: '{kind} == \'videos\'', then: 'selected')}>{desk:t(key: 'ui.kind.videos')}</option>
             <option value="files" {f:if(condition: '{kind} == \'files\'', then: 'selected')}>{desk:t(key: 'ui.files')}</option>
+        </select>
+        <select class="input" name="origin" onchange="this.form.submit()">
+            <option value="" {f:if(condition: '{origin} == \'\'', then: 'selected')}>{desk:t(key: 'media.origin.upload')} + {desk:t(key: 'media.origin.import')}</option>
+            <option value="upload" {f:if(condition: '{origin} == \'upload\'', then: 'selected')}>{desk:t(key: 'media.origin.upload')}</option>
+            <option value="import" {f:if(condition: '{origin} == \'import\'', then: 'selected')}>{desk:t(key: 'media.origin.import')}</option>
+            <option value="generated" {f:if(condition: '{origin} == \'generated\'', then: 'selected')}>{desk:t(key: 'media.showGenerated')}</option>
         </select>
         <button class="button" type="submit">{desk:t(key: 'ui.search')}</button>
     </form>

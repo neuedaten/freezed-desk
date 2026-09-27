@@ -20,10 +20,12 @@ class MediaController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
         $kind = (string) $request->get('kind', 'all');
+        $origin = (string) $request->get('origin', '');
         $page = max(1, (int) $request->get('page', 1));
         $media = $this->context->media();
 
-        $all = $media->all($q, $kind);
+        // Generated files are hidden unless asked for (A8.2).
+        $all = $media->all($q, $kind, origin: in_array($origin, ['upload', 'import', 'generated'], true) ? $origin : null, withGenerated: false);
         $total = count($all);
         $items = array_slice($all, ($page - 1) * self::PER_PAGE, self::PER_PAGE);
 
@@ -35,6 +37,7 @@ class MediaController extends Controller
             'pages' => (int) ceil($total / self::PER_PAGE),
             'q' => $q,
             'kind' => $kind,
+            'origin' => $origin,
             'maxBytes' => (int) $this->context->config->get('upload.maxBytes', 0),
         ]);
     }
@@ -104,11 +107,19 @@ class MediaController extends Controller
     {
         $media = $this->media($params);
 
+        $generatedBy = null;
+        if (isset($media->generatedBy['id'])) {
+            $generatedBy = $this->context->repository()->get((int) $media->generatedBy['id']);
+        }
+
         return $this->view('Media/Show', [
             'media' => $media,
             'usages' => $this->context->media()->usages($media->id),
             'url' => '/media/file/' . $media->file,
-            'thumb' => $media->isImage() ? '/media/thumb/' . $media->id : null,
+            'thumb' => $media->isImage() || $media->isVideo() ? '/media/thumb/' . $media->id : null,
+            'extraFields' => $this->context->media()->fields()->all(),
+            'isVideo' => $media->isVideo(),
+            'generatedBy' => $generatedBy,
             'snippet' => $media->isImage()
                 ? sprintf("{freezed:image(src: '%s', context: '%s', width: 1200)}", $media->file, $this->context->config->mediaRootName())
                 : sprintf("{freezed:resource(path: '%s', context: '%s')}", $media->file, $this->context->config->mediaRootName()),
@@ -131,8 +142,26 @@ class MediaController extends Controller
         } else {
             $meta['focal'] = null;
         }
+        // Extra fields (A7): every declared field is in the form; an
+        // unchecked checkbox sends nothing, so it is false.
+        $fields = $this->context->media()->fields()->all();
+        if ($fields !== []) {
+            $posted = $request->post('extra', []);
+            $posted = is_array($posted) ? $posted : [];
+            $extra = [];
+            foreach ($fields as $name => $field) {
+                $extra[$name] = $field->type === 'bool' ? !empty($posted[$name]) : ($posted[$name] ?? null);
+            }
+            $meta['extra'] = $extra;
+        }
 
-        $updated = $this->context->media()->update($media->id, $meta);
+        try {
+            $updated = $this->context->media()->update($media->id, $meta);
+        } catch (ValidationException $exception) {
+            $this->flash('error', $exception->getMessage());
+
+            return $this->redirect('/media/' . $media->id);
+        }
 
         if ($request->wantsJson()) {
             return Response::json(['media' => ApiController::mediaJson($updated)]);
@@ -184,6 +213,18 @@ class MediaController extends Controller
         $source = $this->context->media()->absolutePath($media);
         if (!is_file($source)) {
             throw new NotFoundException($this->t('ui.notFound'));
+        }
+
+        // Videos show a still (desk.ffmpeg) or a placeholder (A8.3).
+        if ($media->isVideo()) {
+            $poster = $this->context->media()->poster($media, self::THUMB_WIDTH);
+            if ($poster !== null) {
+                return Response::file($poster, 'image/jpeg');
+            }
+            $label = htmlspecialchars($this->t('media.videoPlaceholder'));
+
+            return Response::html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120"><rect width="160" height="120" fill="#1c1f26"/><path d="M68 44v32l26-16z" fill="#fff"/><text x="80" y="104" fill="#9aa1ad" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">' . $label . '</text></svg>')
+                ->withHeader('Content-Type', 'image/svg+xml');
         }
 
         if (!$media->isImage() || $media->isSvg() || $media->mime === 'image/gif' || !function_exists('imagecreatefromstring')

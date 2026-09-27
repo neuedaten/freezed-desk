@@ -61,7 +61,8 @@ class ApiController extends Controller
         $offset = max(0, (int) $request->get('offset', 0));
 
         $results = [];
-        foreach ($this->context->media()->all($q, $kind, $limit, $offset) as $media) {
+        // The picker offers uploads; generated files belong to their record.
+        foreach ($this->context->media()->all($q, $kind, $limit, $offset, withGenerated: false) as $media) {
             $results[] = self::mediaJson($media);
         }
 
@@ -72,9 +73,10 @@ class ApiController extends Controller
     public static function mediaJson(\Neuedaten\FreezedDesk\Media\Media $media): array
     {
         return $media->toVariables() + [
-            'thumb' => $media->isImage() ? '/media/thumb/' . $media->id : null,
+            'thumb' => $media->isImage() || $media->isVideo() ? '/media/thumb/' . $media->id : null,
             'url' => '/media/file/' . $media->file,
-            'isImage' => $media->isImage(),
+            'isImage' => $media->isImage() || $media->isVideo(),
+            'isVideo' => $media->isVideo(),
         ];
     }
 }

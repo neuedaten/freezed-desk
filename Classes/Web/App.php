@@ -8,6 +8,7 @@ use Neuedaten\FreezedDesk\DeskContext;
 use Neuedaten\FreezedDesk\Exception\DeskException;
 use Neuedaten\FreezedDesk\Exception\NotFoundException;
 use Neuedaten\FreezedDesk\Exception\ValidationException;
+use Neuedaten\FreezedDesk\Storage\Actor;
 use Neuedaten\FreezedDesk\Web\Controllers\ActionsController;
 use Neuedaten\FreezedDesk\Web\Controllers\ApiController;
 use Neuedaten\FreezedDesk\Web\Controllers\DashboardController;
@@ -31,6 +32,8 @@ final class App
 
     public function __construct(public readonly DeskContext $context)
     {
+        // Everything done through the UI is a person's change (A3.2).
+        $context->actAs(Actor::Editor);
         $this->session = new Session($context->config->sessionPath());
         $this->view = new View($context);
         $this->router = new Router();
@@ -92,6 +95,9 @@ final class App
         $this->view->share('locale', $this->context->translator()->locale);
         $this->view->share('assetVersion', $this->assetVersion());
         $this->view->share('authUser', $_SERVER['PHP_AUTH_USER'] ?? null);
+        $this->view->share('projectName', $this->context->config->projectName());
+        $this->view->share('projectRoot', $this->context->config->projectRoot);
+        $this->view->share('extensionNavigation', $this->extensionNavigation());
 
         $match = $this->router->match($request->method, $request->path);
         if ($match === null) {
@@ -152,42 +158,48 @@ final class App
     {
         $r = $this->router;
 
-        $r->add('GET', '/', [DashboardController::class, 'index']);
+        $r->add('GET', '/', [DashboardController::class, 'index'], 'status');
 
-        $r->add('GET', '/types/{type}', [RecordsController::class, 'index']);
-        $r->add('GET', '/types/{type}/new', [RecordsController::class, 'create']);
-        $r->add('POST', '/types/{type}/new', [RecordsController::class, 'store']);
-        $r->add('POST', '/types/{type}/bulk', [RecordsController::class, 'bulk']);
-        $r->add('POST', '/types/{type}/reorder', [RecordsController::class, 'reorder']);
-        $r->add('GET', '/types/{type}/{id}', [RecordsController::class, 'edit']);
-        $r->add('POST', '/types/{type}/{id}', [RecordsController::class, 'update']);
-        $r->add('POST', '/types/{type}/{id}/status', [RecordsController::class, 'status']);
-        $r->add('POST', '/types/{type}/{id}/delete', [RecordsController::class, 'delete']);
-        $r->add('GET', '/types/{type}/{id}/preview', [RecordsController::class, 'preview']);
-        $r->add('GET', '/types/{type}/{id}/revisions', [RecordsController::class, 'revisions']);
-        $r->add('POST', '/types/{type}/{id}/revisions/{revision}/restore', [RecordsController::class, 'restore']);
+        $r->add('GET', '/types/{type}', [RecordsController::class, 'index'], 'list');
+        $r->add('GET', '/types/{type}/new', [RecordsController::class, 'create'], 'schema');
+        $r->add('POST', '/types/{type}/new', [RecordsController::class, 'store'], 'put');
+        $r->add('POST', '/types/{type}/bulk', [RecordsController::class, 'bulk'], 'publish');
+        $r->add('POST', '/types/{type}/reorder', [RecordsController::class, 'reorder'], 'reorder');
+        $r->add('POST', '/types/{type}/actions/{name}/run', [RecordsController::class, 'bulkAction'], 'action');
+        $r->add('GET', '/types/{type}/{id}', [RecordsController::class, 'edit'], 'get');
+        $r->add('POST', '/types/{type}/{id}', [RecordsController::class, 'update'], 'put');
+        $r->add('POST', '/types/{type}/{id}/status', [RecordsController::class, 'status'], 'publish');
+        $r->add('POST', '/types/{type}/{id}/delete', [RecordsController::class, 'delete'], 'delete');
+        $r->add('POST', '/types/{type}/{id}/actions/{name}/run', [RecordsController::class, 'action'], 'action');
+        $r->add('GET', '/types/{type}/{id}/preview', [RecordsController::class, 'preview'], 'preview-url');
+        $r->add('GET', '/types/{type}/{id}/revisions', [RecordsController::class, 'revisions'], 'revisions');
+        $r->add('POST', '/types/{type}/{id}/revisions/{revision}/restore', [RecordsController::class, 'restore'], 'restore');
 
-        $r->add('GET', '/folders/{type}', [FoldersController::class, 'index']);
+        $r->add('GET', '/folders/{type}', [FoldersController::class, 'index'], 'ui:folder types are read from content/ by the core; the CLI reads the files');
 
-        $r->add('GET', '/media', [MediaController::class, 'index']);
-        $r->add('POST', '/media/upload', [MediaController::class, 'upload']);
-        $r->add('GET', '/media/thumb/{id}', [MediaController::class, 'thumb']);
-        $r->add('GET', '/media/file/{path...}', [MediaController::class, 'file']);
-        $r->add('GET', '/media/{id}', [MediaController::class, 'show']);
-        $r->add('POST', '/media/{id}', [MediaController::class, 'update']);
-        $r->add('POST', '/media/{id}/delete', [MediaController::class, 'delete']);
+        $r->add('GET', '/media', [MediaController::class, 'index'], 'media:list');
+        $r->add('POST', '/media/upload', [MediaController::class, 'upload'], 'media:add');
+        $r->add('GET', '/media/thumb/{id}', [MediaController::class, 'thumb'], 'ui:a thumbnail for the browser; media:get gives the path');
+        $r->add('GET', '/media/file/{path...}', [MediaController::class, 'file'], 'ui:the file for the browser; media:get gives the path');
+        $r->add('GET', '/media/{id}', [MediaController::class, 'show'], 'media:get');
+        $r->add('POST', '/media/{id}', [MediaController::class, 'update'], 'media:update');
+        $r->add('POST', '/media/{id}/delete', [MediaController::class, 'delete'], 'media:delete');
 
-        $r->add('GET', '/inbox', [InboxController::class, 'index']);
-        $r->add('POST', '/inbox/fetch', [InboxController::class, 'fetch']);
-        $r->add('GET', '/inbox/{id}', [InboxController::class, 'show']);
-        $r->add('POST', '/inbox/{id}', [InboxController::class, 'update']);
+        $r->add('GET', '/inbox', [InboxController::class, 'index'], 'inbox:list');
+        $r->add('POST', '/inbox/fetch', [InboxController::class, 'fetch'], 'inbox');
+        $r->add('GET', '/inbox/{id}', [InboxController::class, 'show'], 'inbox:show');
+        $r->add('POST', '/inbox/{id}', [InboxController::class, 'update'], 'inbox:set');
 
-        $r->add('GET', '/actions', [ActionsController::class, 'index']);
-        $r->add('POST', '/actions/{name}/run', [ActionsController::class, 'run']);
+        $r->add('GET', '/actions', [ActionsController::class, 'index'], 'actions');
+        $r->add('POST', '/actions/{name}/run', [ActionsController::class, 'run'], 'action');
 
-        $r->add('GET', '/api/search', [ApiController::class, 'search']);
-        $r->add('GET', '/api/media', [ApiController::class, 'media']);
-        $r->add('GET', '/api/records/{id}', [ApiController::class, 'record']);
+        $r->add('GET', '/api/search', [ApiController::class, 'search'], 'list');
+        $r->add('GET', '/api/media', [ApiController::class, 'media'], 'media:list');
+        $r->add('GET', '/api/records/{id}', [ApiController::class, 'record'], 'get');
+
+        foreach ($this->context->extensions() as $extension) {
+            $extension->routes($r);
+        }
     }
 
     /**
@@ -245,12 +257,29 @@ final class App
     }
 
     /**
+     * Sidebar links of the extensions.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function extensionNavigation(): array
+    {
+        $links = [];
+        foreach ($this->context->extensions() as $extension) {
+            foreach ($extension->navigation($this->context) as $link) {
+                $links[] = $link + ['badge' => null, 'level' => ''];
+            }
+        }
+
+        return $links;
+    }
+
+    /**
      * A short hash of the UI's css and js, so browsers pick up changes.
      */
     private function assetVersion(): string
     {
         $parts = [];
-        foreach (['css/desk.css', 'js/desk.js'] as $asset) {
+        foreach (['css/desk.css', 'css/theme.css', 'js/desk.js'] as $asset) {
             $file = $this->view->staticFile($asset);
             $parts[] = $file === null ? '0' : (string) filemtime($file);
         }

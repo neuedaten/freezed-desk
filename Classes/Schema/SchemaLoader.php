@@ -221,7 +221,7 @@ final class SchemaLoader
             throw new SchemaException($context . ': "listColumns" must be an array of field names.');
         }
         foreach ($listColumns as $column) {
-            if (!is_string($column) || (!isset($fields[$column]) && !in_array($column, ['slug', 'variant', 'status', 'updatedAt', 'publishedAt', 'createdAt', 'sort'], true))) {
+            if (!is_string($column) || (!isset($fields[$column]) && !in_array($column, ['slug', 'variant', 'status', 'updatedAt', 'publishedAt', 'createdAt', 'sort', 'updatedBy'], true))) {
                 throw new SchemaException(sprintf('%s: listColumns names the unknown column "%s".', $context, is_string($column) ? $column : get_debug_type($column)));
             }
         }
@@ -231,6 +231,20 @@ final class SchemaLoader
         $callback = $declaration['variables'] ?? null;
         if ($callback !== null && !is_callable($callback)) {
             throw new SchemaException($context . ': "variables" must be a callable (function (array $item, Repository $repo): array).');
+        }
+
+        $approval = $declaration['approval'] ?? null;
+        if ($approval !== null && $approval !== 'ui') {
+            throw new SchemaException($context . ': "approval" must be \'ui\' (only a person in the UI can publish) or be left out.');
+        }
+
+        $checks = [];
+        foreach (['validate', 'warnings', 'guard'] as $key) {
+            $check = $declaration[$key] ?? null;
+            if ($check !== null && !is_callable($check)) {
+                throw new SchemaException(sprintf('%s: "%s" must be a callable (function (array $fields, ?Item $item, ValidationContext $ctx): array).', $context, $key));
+            }
+            $checks[$key] = $check === null ? null : \Closure::fromCallable($check);
         }
 
         return new TypeSchema(
@@ -247,7 +261,150 @@ final class SchemaLoader
             built: in_array($slug, $this->builtTypes, true),
             variablesCallback: $callback === null ? null : \Closure::fromCallable($callback),
             file: $file,
+            approval: $approval,
+            validateCallback: $checks['validate'],
+            warningsCallback: $checks['warnings'],
+            guardCallback: $checks['guard'],
+            listViews: $this->normaliseListViews($declaration['listViews'] ?? null, $fields, $context),
+            listFilters: $this->normaliseListFilters($declaration['listFilters'] ?? null, $fields, $context),
+            actions: $this->normaliseActions($declaration['actions'] ?? null, $context),
         );
+    }
+
+    /**
+     * 'listViews' => ['agenda', 'cards' => ['image' => 'assets', 'fields' => ['format', 'channels']], 'table']
+     *
+     * Options: "field" (agenda: the date/datetime field to group by, default
+     * the first one), "image" (cards/agenda: an image, images or files field
+     * for the preview), "fields" (two fields shown under the title).
+     *
+     * @param array<string, FieldDefinition> $fields
+     * @return array<string, array<string, mixed>>
+     */
+    private function normaliseListViews(mixed $views, array $fields, string $context): array
+    {
+        if ($views === null || $views === []) {
+            return ['table' => []];
+        }
+        if (!is_array($views)) {
+            throw new SchemaException($context . ': "listViews" must be a list of views (table, cards, agenda), optionally with options.');
+        }
+
+        $result = [];
+        foreach ($views as $key => $options) {
+            if (is_int($key)) {
+                $key = $options;
+                $options = [];
+            }
+            if (!is_string($key) || !in_array($key, TypeSchema::LIST_VIEWS, true)) {
+                throw new SchemaException(sprintf('%s: listViews names the unknown view "%s" (known: %s).', $context, is_string($key) ? $key : get_debug_type($key), implode(', ', TypeSchema::LIST_VIEWS)));
+            }
+            if (!is_array($options)) {
+                throw new SchemaException(sprintf('%s: the options of list view "%s" must be an array.', $context, $key));
+            }
+
+            $image = $options['image'] ?? array_key_first(array_filter($fields, static fn (FieldDefinition $f): bool => in_array($f->type, ['image', 'images', 'files'], true)));
+            if ($image !== null && (!isset($fields[$image]) || !in_array($fields[$image]->type, ['image', 'images', 'files'], true))) {
+                throw new SchemaException(sprintf('%s: list view "%s": "image" must name an image, images or files field.', $context, $key));
+            }
+            $options['image'] = $image;
+
+            if ($key === 'agenda') {
+                $dateField = $options['field'] ?? array_key_first(array_filter($fields, static fn (FieldDefinition $f): bool => in_array($f->type, ['date', 'datetime'], true)));
+                if ($dateField === null || !isset($fields[$dateField]) || !in_array($fields[$dateField]->type, ['date', 'datetime'], true)) {
+                    throw new SchemaException($context . ': the agenda view needs a date or datetime field ("field").');
+                }
+                $options['field'] = $dateField;
+            }
+
+            $shown = $options['fields'] ?? [];
+            if (!is_array($shown)) {
+                throw new SchemaException(sprintf('%s: list view "%s": "fields" must be a list of field names.', $context, $key));
+            }
+            foreach ($shown as $name) {
+                if (!is_string($name) || !isset($fields[$name])) {
+                    throw new SchemaException(sprintf('%s: list view "%s" names the unknown field "%s".', $context, $key, is_string($name) ? $name : get_debug_type($name)));
+                }
+            }
+            $options['fields'] = array_values($shown);
+
+            $result[$key] = $options;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 'listFilters' => ['format', 'channels', 'at', 'updatedBy']: select,
+     * bool, relation, date and datetime fields plus "updatedBy" (who changed
+     * the record last).
+     *
+     * @param array<string, FieldDefinition> $fields
+     * @return string[]
+     */
+    private function normaliseListFilters(mixed $filters, array $fields, string $context): array
+    {
+        if ($filters === null) {
+            return [];
+        }
+        if (!is_array($filters)) {
+            throw new SchemaException($context . ': "listFilters" must be a list of field names.');
+        }
+        foreach ($filters as $name) {
+            if ($name === 'updatedBy') {
+                continue;
+            }
+            if (!is_string($name) || !isset($fields[$name])) {
+                throw new SchemaException(sprintf('%s: listFilters names the unknown field "%s".', $context, is_string($name) ? $name : get_debug_type($name)));
+            }
+            if (!in_array($fields[$name]->type, ['select', 'bool', 'relation', 'date', 'datetime'], true)) {
+                throw new SchemaException(sprintf('%s: listFilters: "%s" is a %s field; filters work on select, bool, relation, date and datetime fields.', $context, $name, $fields[$name]->type));
+            }
+        }
+
+        return array_values($filters);
+    }
+
+    /**
+     * 'actions' => ['render' => ['label' => 'Neu rendern', 'command' => 'desk:social:render posts/{slug}', 'bulk' => true,
+     *                            'when' => fn (Item $item): bool => …]]
+     *
+     * @return array<string, array{label: string, command: string, bulk: bool, when: \Closure|null}>
+     */
+    private function normaliseActions(mixed $actions, string $context): array
+    {
+        if ($actions === null) {
+            return [];
+        }
+        if (!is_array($actions)) {
+            throw new SchemaException($context . ': "actions" must be an array of name => [label, command].');
+        }
+
+        $result = [];
+        foreach ($actions as $name => $action) {
+            $name = (string) $name;
+            if (!preg_match('/^[a-z0-9][a-z0-9_-]*$/', $name)) {
+                throw new SchemaException(sprintf('%s: "%s" is not a valid action name.', $context, $name));
+            }
+            if (is_string($action)) {
+                $action = ['command' => $action];
+            }
+            if (!is_array($action) || !isset($action['command']) || !is_string($action['command']) || trim($action['command']) === '') {
+                throw new SchemaException(sprintf('%s: action "%s" needs a "command".', $context, $name));
+            }
+            $when = $action['when'] ?? null;
+            if ($when !== null && !is_callable($when)) {
+                throw new SchemaException(sprintf('%s: "when" of action "%s" must be a callable (function (Item $item): bool).', $context, $name));
+            }
+            $result[$name] = [
+                'label' => (string) ($action['label'] ?? ucfirst($name)),
+                'command' => $action['command'],
+                'bulk' => (bool) ($action['bulk'] ?? false),
+                'when' => $when === null ? null : \Closure::fromCallable($when),
+            ];
+        }
+
+        return $result;
     }
 
     /**

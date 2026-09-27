@@ -29,6 +29,7 @@ final class DeskConfig
     public function __construct(
         public readonly string $projectRoot,
         array $projectValues = [],
+        private readonly ?string $siteName = null,
     ) {
         $this->values = array_replace_recursive(self::defaults(), $projectValues);
     }
@@ -42,8 +43,9 @@ final class DeskConfig
         $config = ConfigService::getInstance();
         $projectRoot = (string) $config->getValue('[projectRoot]');
         $desk = $config->getValue('[desk]');
+        $siteName = $config->getValue('[variables][siteName]');
 
-        return new self($projectRoot, is_array($desk) ? $desk : []);
+        return new self($projectRoot, is_array($desk) ? $desk : [], is_string($siteName) ? $siteName : null);
     }
 
     /** @return array<string, mixed> */
@@ -63,6 +65,21 @@ final class DeskConfig
         }
 
         return $value;
+    }
+
+    /**
+     * The project's name for the UI: desk.projectName, else the site's
+     * siteName variable, else the name of the project folder.
+     */
+    public function projectName(): string
+    {
+        foreach ([$this->get('projectName'), $this->siteName] as $name) {
+            if (is_string($name) && trim($name) !== '') {
+                return trim($name);
+            }
+        }
+
+        return basename(rtrim($this->projectRoot, '/')) ?: $this->projectRoot;
     }
 
     /** @return array<string, mixed> */
@@ -108,9 +125,52 @@ final class DeskConfig
         return $this->absolute((string) $this->get('formsPath', 'desk/forms'));
     }
 
+    /** Project Markdown files for the agent guide (desk/agent/<topic>.md, A2.1). */
+    public function agentPath(): string
+    {
+        return $this->absolute((string) $this->get('agentPath', 'desk/agent'));
+    }
+
     public function themesPath(): string
     {
         return $this->absolute((string) $this->get('themesPath', 'desk/themes'));
+    }
+
+    /**
+     * Absolute path of the package theme named by desk.theme (a folder next
+     * to themes/00_desk), or null for the plain desk theme.
+     *
+     * @throws DeskException
+     */
+    public function packageThemePath(): ?string
+    {
+        $name = $this->get('theme');
+        if ($name === null || $name === '') {
+            return null;
+        }
+        if (!is_string($name) || !preg_match('/^[a-z0-9][a-z0-9_-]*$/', $name) || $name === '00_desk') {
+            throw new DeskException('desk.theme must be the name of a theme shipped with Desk, got ' . json_encode($name) . '.');
+        }
+
+        $path = dirname(__DIR__, 2) . '/themes/' . $name;
+        if (!is_dir($path)) {
+            throw new DeskException('desk.theme "' . $name . '" does not exist. Available: ' . implode(', ', self::packageThemes()) . '.');
+        }
+
+        return $path;
+    }
+
+    /** @return string[] Names of the themes shipped with Desk besides 00_desk. */
+    public static function packageThemes(): array
+    {
+        $names = [];
+        foreach (glob(dirname(__DIR__, 2) . '/themes/*', GLOB_ONLYDIR) ?: [] as $directory) {
+            if (basename($directory) !== '00_desk') {
+                $names[] = basename($directory);
+            }
+        }
+
+        return $names;
     }
 
     public function mediaRootName(): string
@@ -243,7 +303,7 @@ final class DeskConfig
             $this->assertNoOverlap('desk.dataPath', $dataPath, $key, $other);
         }
 
-        foreach (['typesPath', 'fieldsPath', 'formsPath', 'themesPath'] as $key) {
+        foreach (['typesPath', 'fieldsPath', 'formsPath', 'themesPath', 'agentPath'] as $key) {
             $value = (string) $this->get($key, '');
             if (trim($value, '/\\ ') === '' || FileService::isAbsolutePath($value)) {
                 throw new DeskException('desk.' . $key . ' must be a non-empty path relative to the project root.');
@@ -253,6 +313,8 @@ final class DeskConfig
                 throw new DeskException('desk.' . $key . ' "' . $value . '" must lie inside the project.');
             }
         }
+
+        $this->packageThemePath();
 
         $this->validated = true;
     }

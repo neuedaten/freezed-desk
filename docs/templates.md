@@ -113,6 +113,17 @@ second argument when `dataPath` or `database` differ. Without a database or
 record it returns an empty array, so a fresh project builds before Desk was
 ever used.
 
+Called from a page's variables file instead of `freezed.config.php`, the
+calling file is not in the project root: pass the root as third argument.
+
+```php
+// content/pages/about/variables.php
+Desk::variables('site', [], dirname(__DIR__, 3));
+```
+
+`Desk::media()` gives the media library the same way, e.g. to look up a
+file's metadata in page variables; `Desk::repository()` reads records.
+
 ## Overriding the desk UI
 
 Desk's own templates are Fluid too. A project overrides any of them by

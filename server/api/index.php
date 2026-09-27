@@ -11,6 +11,10 @@
  *   GET  /api/v1/inbox?since=<id> submissions newer than <id>, Bearer token
  *   POST /api/v1/inbox/ack        {"ids": […]} marks them fetched, Bearer token
  *
+ *   /api/v1/outbox/…              the outbox module (Bearer token of its own), when
+ *                                 $config['outbox'] is set; see outbox/outbox.php. The
+ *                                 module is server/outbox/ copied to api/outbox/.
+ *
  * Spam rules: honeypot field must be empty, token must be at least
  * spam.minSeconds old, per-IP-hash hourly limit. Everything else -- mail,
  * newsletter, whatever the site needs -- is the project's to add.
@@ -30,6 +34,12 @@ $path = preg_replace('#^.*/api/v1#', '', $path) ?? '';
 $path = '/' . trim($path, '/');
 
 try {
+    // Outbox module: everything below /outbox, before the inbox database is opened.
+    if (($path === '/outbox' || str_starts_with($path, '/outbox/')) && is_array($config['outbox'] ?? null)) {
+        require_once __DIR__ . '/outbox/outbox.php';
+        desk_outbox_handle($config['outbox'], $method, substr($path, 7) ?: '/');
+    }
+
     $db = inbox_db($config);
 
     if ($method === 'GET' && $path === '/token') {

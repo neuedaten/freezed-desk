@@ -446,11 +446,17 @@
         output.hidden = false;
         output.textContent = '';
         button.disabled = true;
+        const body = new URLSearchParams({_token: csrf});
+        // Bulk record actions send the selected records.
+        if (button.dataset.actionIds) {
+            document.querySelectorAll(button.dataset.actionIds).forEach(check => body.append('ids[]', check.value));
+        }
+        let finished = false;
         try {
             const response = await fetch(button.dataset.actionUrl, {
                 method: 'POST',
                 headers: {'X-CSRF-Token': csrf, 'X-Requested-With': 'fetch'},
-                body: new URLSearchParams({_token: csrf})
+                body: body
             });
             if (!response.body) { output.textContent = await response.text(); return; }
             const reader = response.body.getReader();
@@ -461,10 +467,15 @@
                 output.textContent += decoder.decode(value, {stream: true});
                 output.scrollTop = output.scrollHeight;
             }
+            finished = /\[exit 0\]/.test(output.textContent);
         } catch (err) {
             output.textContent += '\n' + err.message;
         } finally {
             button.disabled = false;
+        }
+        // A record action that changed the record (e.g. rendered files): show the new state.
+        if (finished && button.hasAttribute('data-action-reload')) {
+            setTimeout(() => location.reload(), 600);
         }
     });
 })();

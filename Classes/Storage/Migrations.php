@@ -93,6 +93,45 @@ final class Migrations
                     value TEXT NOT NULL
                 )',
             ],
+            // 0.2: who changed a record (actor) and a running revision number
+            // for conflict protection; media extras and generated media.
+            2 => [
+                'ALTER TABLE items ADD COLUMN revision INTEGER NOT NULL DEFAULT 1',
+                'ALTER TABLE items ADD COLUMN updated_by TEXT NOT NULL DEFAULT \'\'',
+                'ALTER TABLE items ADD COLUMN seen_revision INTEGER NULL',
+                'ALTER TABLE revisions ADD COLUMN number INTEGER NULL',
+                'ALTER TABLE revisions ADD COLUMN actor TEXT NOT NULL DEFAULT \'\'',
+                'ALTER TABLE revisions ADD COLUMN saved_at TEXT NULL',
+                // Number the revisions kept so far and continue from there.
+                'UPDATE revisions SET number = (SELECT COUNT(*) FROM revisions r2 WHERE r2.item_id = revisions.item_id AND r2.id <= revisions.id)',
+                'UPDATE items SET revision = 1 + (SELECT COUNT(*) FROM revisions r WHERE r.item_id = items.id)',
+                'CREATE INDEX items_updated_by ON items (type, updated_by)',
+                'ALTER TABLE media ADD COLUMN extra TEXT NOT NULL DEFAULT \'{}\'',
+                'ALTER TABLE media ADD COLUMN origin TEXT NOT NULL DEFAULT \'upload\'',
+                'ALTER TABLE media ADD COLUMN generated_by TEXT NULL',
+                'ALTER TABLE media ADD COLUMN generated_key TEXT NULL',
+                'CREATE UNIQUE INDEX media_generated_key ON media (generated_key)',
+                'CREATE INDEX media_origin ON media (origin)',
+            ],
+            // 0.2: the outbox, one row per message pushed to the server.
+            3 => [
+                'CREATE TABLE outbox (
+                    key TEXT PRIMARY KEY,
+                    item_id INTEGER NULL,
+                    channel TEXT NOT NULL,
+                    at TEXT NOT NULL,
+                    hash TEXT NOT NULL,
+                    state TEXT NOT NULL DEFAULT \'pending\',
+                    pushed_at TEXT NULL,
+                    remote_id TEXT NULL,
+                    url TEXT NULL,
+                    error TEXT NULL,
+                    notice TEXT NULL,
+                    updated_at TEXT NOT NULL
+                )',
+                'CREATE INDEX outbox_item ON outbox (item_id)',
+                'CREATE INDEX outbox_state ON outbox (state)',
+            ],
         ];
     }
 

@@ -8,7 +8,7 @@ namespace Neuedaten\FreezedDesk\Storage;
  */
 final readonly class Item
 {
-    public const STANDARD_KEYS = ['id', 'slug', 'variant', 'status', 'title', 'sort', 'createdAt', 'updatedAt', 'publishedAt', 'type'];
+    public const STANDARD_KEYS = ['id', 'slug', 'variant', 'status', 'title', 'sort', 'createdAt', 'updatedAt', 'publishedAt', 'type', 'revision', 'updatedBy'];
 
     /**
      * @param array<string, mixed> $data
@@ -25,6 +25,9 @@ final readonly class Item
         public string $createdAt,
         public string $updatedAt,
         public ?string $publishedAt,
+        public int $revision = 1,
+        public string $updatedBy = '',
+        public ?int $seenRevision = null,
     ) {
     }
 
@@ -45,6 +48,9 @@ final readonly class Item
             createdAt: (string) $row['created_at'],
             updatedAt: (string) $row['updated_at'],
             publishedAt: isset($row['published_at']) ? (string) $row['published_at'] : null,
+            revision: (int) ($row['revision'] ?? 1),
+            updatedBy: (string) ($row['updated_by'] ?? ''),
+            seenRevision: isset($row['seen_revision']) ? (int) $row['seen_revision'] : null,
         );
     }
 
@@ -66,6 +72,8 @@ final readonly class Item
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'publishedAt' => $this->publishedAt,
+            'revision' => $this->revision,
+            'updatedBy' => $this->updatedBy,
             default => $this->dataValue($path),
         };
     }
@@ -73,6 +81,15 @@ final readonly class Item
     public function isPublished(): bool
     {
         return $this->status === Status::Published;
+    }
+
+    /**
+     * Changed by the agent since a person last opened it in the UI: the
+     * filter "from the agent, not yet seen by a person" (A3.5).
+     */
+    public function isUnseenAgentChange(): bool
+    {
+        return $this->updatedBy === Actor::Agent->value && ($this->seenRevision === null || $this->seenRevision < $this->revision);
     }
 
     /** @return array{type: string, id: int} */

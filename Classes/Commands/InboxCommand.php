@@ -11,6 +11,11 @@ use Neuedaten\FreezedDesk\Inbox\InboxClient;
  */
 class InboxCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
         $count = (new InboxClient($context))->fetch();

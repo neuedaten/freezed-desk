@@ -38,6 +38,20 @@ class DashboardController extends Controller
 
         $lastBuild = json_decode((string) $repository->setting('lastBuild', ''), true);
 
+        $unseen = [];
+        foreach ($schemas as $schema) {
+            foreach ($repository->find($schema->slug)->notArchived()->filter(static fn ($item): bool => $item->isUnseenAgentChange())->orderBy('updatedAt', 'DESC')->all() as $item) {
+                $unseen[] = ['item' => $item, 'schema' => $schema];
+            }
+        }
+
+        $panels = [];
+        foreach ($this->context->extensions() as $extension) {
+            foreach ($extension->dashboardPanels($this->context) as $panel) {
+                $panels[] = $panel;
+            }
+        }
+
         return $this->view('Dashboard/Index', [
             'types' => $types,
             'drafts' => array_slice($drafts, 0, 10),
@@ -45,6 +59,9 @@ class DashboardController extends Controller
             'inboxOpen' => $this->context->inbox()->count(['new', 'open']),
             'lastBuild' => is_array($lastBuild) ? $lastBuild : null,
             'mediaCount' => $this->context->media()->count(),
+            'unseen' => array_slice($unseen, 0, 20),
+            'unseenCount' => count($unseen),
+            'panels' => $panels,
         ]);
     }
 }

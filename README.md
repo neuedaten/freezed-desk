@@ -70,7 +70,9 @@ See [docs/getting-started.md](docs/getting-started.md) for the walk-through.
 - [CLI](docs/cli.md)
 - [The UI](docs/ui.md)
 - [Export, import and seeds](docs/export-import.md)
+- [Actors, approval and conflicts](docs/approval.md)
 - [Inbox module](docs/inbox.md)
+- [Outbox module](docs/outbox.md)
 - [Scripts and agents: the JSON CLI](docs/agents.md)
 - [Extending Desk](docs/extending.md)
 

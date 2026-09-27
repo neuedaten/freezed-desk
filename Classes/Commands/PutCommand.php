@@ -19,6 +19,12 @@ use Neuedaten\FreezedDesk\Exception\DeskException;
  * no record has creates the record with that slug. Prints the saved record
  * as `get` would; validation errors come as {"error", "errors"} with exit
  * code 1.
+ *
+ * --if-revision:<n> saves only when the record is still at revision n
+ * (from `get`); otherwise the answer is {"error": "conflict: …",
+ * "current": <record>} and nothing changes (A4). System fields (rendered
+ * assets, outbox results) cannot be written with put. --dry-run shows the
+ * record that would be saved.
  */
 class PutCommand extends AbstractCommand
 {
@@ -49,7 +55,7 @@ class PutCommand extends AbstractCommand
         } else {
             $fields = [];
             foreach ($record as $key => $value) {
-                if ($schema->hasField((string) $key) || !in_array($key, ['id', 'type', 'title', 'slug', 'variant', 'status', 'sort', 'createdAt', 'updatedAt', 'publishedAt', 'created'], true)) {
+                if ($schema->hasField((string) $key) || !in_array($key, ['id', 'type', 'title', 'slug', 'variant', 'status', 'sort', 'createdAt', 'updatedAt', 'publishedAt', 'created', 'revision', 'updatedBy', 'validation', 'notices', 'dryRun'], true)) {
                     $fields[$key] = $value;
                 }
             }
@@ -60,6 +66,10 @@ class PutCommand extends AbstractCommand
         foreach (array_keys($fields) as $name) {
             if (!$schema->hasField((string) $name)) {
                 throw new DeskException(sprintf('Unknown field "%s" for type "%s". Run freezed-desk schema %s.', $name, $type, $type));
+            }
+            if ($schema->field((string) $name)->system) {
+                // `get` prints system fields too; sending them back unchanged is fine.
+                unset($fields[$name]);
             }
         }
 
@@ -80,8 +90,17 @@ class PutCommand extends AbstractCommand
             $input['sort'] = $record['sort'];
         }
 
-        $saved = $context->repository()->save($type, $input, $existing?->id, 'cli');
-        self::printJson(GetCommand::portable($context, $saved) + ['created' => $existing === null]);
+        $ifRevision = isset($options['if-revision']) && is_numeric($options['if-revision']) ? (int) $options['if-revision'] : null;
+
+        $result = self::change($context, $options, static function () use ($context, $type, $input, $existing, $ifRevision): array {
+            $saved = $context->repository()->save($type, $input, $existing?->id, $context->actor()->value, ifRevision: $ifRevision);
+
+            return GetCommand::portable($context, $saved) + ['created' => $existing === null, 'notices' => $context->repository()->notices()];
+        });
+        if (self::isDryRun($options)) {
+            $result['dryRun'] = true;
+        }
+        self::printJson($result);
 
         return 0;
     }

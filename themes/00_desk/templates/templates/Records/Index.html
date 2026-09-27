@@ -4,11 +4,19 @@
     <div class="page-header">
         <h1>{schema.label} <span class="muted">{total}</span></h1>
         <div class="page-header__actions">
+            <f:if condition="{views -> f:count()} > 1">
+                <div class="segmented" role="group">
+                    <f:for each="{views}" as="v">
+                        <a class="segmented__item {f:if(condition: '{v} == {view}', then: 'is-active')}" href="{desk:query(set: {view: v, page: null})}">{desk:t(key: 'ui.view.{v}')}</a>
+                    </f:for>
+                </div>
+            </f:if>
             <a class="button button--primary" href="/types/{schema.slug}/new">+ {desk:t(key: 'ui.new')}</a>
         </div>
     </div>
 
     <form class="toolbar" method="get" action="/types/{schema.slug}">
+        <input type="hidden" name="view" value="{view}">
         <input type="search" class="input" name="q" value="{q}" placeholder="{desk:t(key: 'ui.searchPlaceholder')}">
         <select class="input" name="status" onchange="this.form.submit()">
             <option value="" {f:if(condition: '{status} == \'\'', then: 'selected')}>{desk:t(key: 'ui.status.draft')} + {desk:t(key: 'ui.status.published')}</option>
@@ -17,10 +25,12 @@
             <option value="archived" {f:if(condition: '{status} == \'archived\'', then: 'selected')}>{desk:t(key: 'ui.status.archived')} ({counts.archived})</option>
             <option value="all" {f:if(condition: '{status} == \'all\'', then: 'selected')}>{desk:t(key: 'ui.all')}</option>
         </select>
+        <f:render partial="ListFilters" arguments="{filters: filters}" />
         <f:if condition="{sort}"><input type="hidden" name="sort" value="{sort}"><input type="hidden" name="dir" value="{dir}"></f:if>
         <f:if condition="{relItem}"><input type="hidden" name="rel" value="{relItem.id}"></f:if>
         <f:if condition="{feature}"><input type="hidden" name="feature" value="{feature}"></f:if>
         <button class="button" type="submit">{desk:t(key: 'ui.search')}</button>
+        <f:if condition="{filtered}"><a class="button button--ghost" href="/types/{schema.slug}?view={view}">{desk:t(key: 'ui.filter.reset')}</a></f:if>
         <f:if condition="{relItem}">
             <span class="chip">→ {relItem.title} <a href="{desk:query(set: {rel: null})}" aria-label="remove">✕</a></span>
         </f:if>
@@ -35,64 +45,91 @@
                 <input type="hidden" name="_token" value="{csrfToken}">
                 <input type="hidden" name="back" value="{desk:query(set: {})}">
                 <span>{desk:t(key: 'ui.withSelected')}</span>
-                <button class="button button--small" name="bulk" value="published">{desk:t(key: 'ui.publish')}</button>
-                <button class="button button--small" name="bulk" value="draft">{desk:t(key: 'ui.unpublish')}</button>
+                <button class="button button--small {f:if(condition: approvalType, then: 'button--primary')}" name="bulk" value="published">{f:if(condition: approvalType, then: '{desk:t(key: \'approval.approve\')}', else: '{desk:t(key: \'ui.publish\')}')}</button>
+                <button class="button button--small" name="bulk" value="draft">{f:if(condition: approvalType, then: '{desk:t(key: \'approval.withdraw\')}', else: '{desk:t(key: \'ui.unpublish\')}')}</button>
                 <button class="button button--small" name="bulk" value="archived">{desk:t(key: 'ui.archive')}</button>
+                <f:for each="{recordActions}" as="recordAction" key="actionName">
+                    <button type="button" class="button button--small action-run" data-action-url="/types/{schema.slug}/actions/{actionName}/run" data-action-ids="[data-bulk-check]:checked" data-output="#bulk-output">▶ {recordAction.label}</button>
+                </f:for>
                 <button class="button button--small button--danger" name="bulk" value="delete" data-confirm="{desk:t(key: 'ui.deleteConfirm')}">{desk:t(key: 'ui.delete')}</button>
             </form>
+            <pre class="output" id="bulk-output" hidden></pre>
 
-            <div class="table-wrap">
-                <table class="table" {f:if(condition: sortMode, then: 'data-sortable data-reorder-url="/types/{schema.slug}/reorder"')}>
-                    <thead>
-                        <tr>
-                            <th class="table__check"><input type="checkbox" data-bulk-all aria-label="all"></th>
-                            <f:if condition="{sortMode}"><th class="table__handle"></th></f:if>
-                            <f:for each="{columns}" as="column">
-                                <th>
-                                    <f:if condition="{column.sortable}">
-                                        <f:then>
-                                            <f:variable name="nextDir" value="{f:if(condition: '{sort} == {column.name} && {dir} == \'ASC\'', then: 'desc', else: 'asc')}" />
-                                            <a class="table__sort {f:if(condition: '{sort} == {column.name}', then: 'is-active')}" href="{desk:query(set: {sort: column.name, dir: nextDir, page: null})}">{column.label}<f:if condition="{sort} == {column.name}"> {f:if(condition: '{dir} == \'ASC\'', then: '↑', else: '↓')}</f:if></a>
-                                        </f:then>
-                                        <f:else>{column.label}</f:else>
-                                    </f:if>
-                                </th>
-                            </f:for>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <f:for each="{rows}" as="row">
-                            <tr data-id="{row.item.id}" {f:if(condition: sortMode, then: 'draggable="true"')}>
-                                <td class="table__check"><input type="checkbox" form="bulk-form" name="ids[]" value="{row.item.id}" data-bulk-check aria-label="select"></td>
-                                <f:if condition="{sortMode}"><td class="table__handle"><span class="drag-handle" title="{desk:t(key: 'ui.sort')}">⋮⋮</span></td></f:if>
-                                <f:for each="{columns}" as="column" iteration="ci">
-                                    <f:variable name="cell" value="{row.cells.{column.name}}" />
-                                    <td class="cell cell--{cell.kind}">
-                                        <f:switch expression="{cell.kind}">
-                                            <f:case value="status"><f:render partial="Status" arguments="{status: cell.text}" /></f:case>
-                                            <f:case value="refs"><f:for each="{cell.refs}" as="ref"><a class="chip chip--link" href="{ref.href}">{ref.title}</a> </f:for></f:case>
-                                            <f:case value="image"><f:if condition="{cell.id}"><img class="thumb thumb--tiny" src="/media/thumb/{cell.id}" alt=""></f:if></f:case>
-                                            <f:case value="date">{desk:date(value: cell.text)}</f:case>
-                                            <f:case value="count"><span class="muted">{cell.text}</span></f:case>
-                                            <f:defaultCase>
-                                                <f:if condition="{ci.isFirst}"><f:then><a class="table__title" href="/types/{schema.slug}/{row.item.id}">{cell.text}</a></f:then><f:else>{cell.text}</f:else></f:if>
-                                            </f:defaultCase>
-                                        </f:switch>
-                                    </td>
-                                </f:for>
-                                <td class="table__actions">
-                                    <a class="button button--small button--ghost" href="/types/{schema.slug}/{row.item.id}">{desk:t(key: 'ui.edit')}</a>
-                                </td>
-                            </tr>
+            <f:switch expression="{view}">
+                <f:case value="cards">
+                    <div class="record-cards">
+                        <f:for each="{rows}" as="row"><f:render partial="RecordCard" arguments="{row: row, schema: schema}" /></f:for>
+                    </div>
+                </f:case>
+                <f:case value="agenda">
+                    <div class="agenda">
+                        <f:for each="{groups}" as="group">
+                            <section class="agenda__day">
+                                <h2 class="agenda__date">{group.label}</h2>
+                                <div class="record-cards record-cards--agenda">
+                                    <f:for each="{group.rows}" as="row"><f:render partial="RecordCard" arguments="{row: row, schema: schema}" /></f:for>
+                                </div>
+                            </section>
                         </f:for>
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </f:case>
+                <f:defaultCase>
+                    <div class="table-wrap">
+                        <table class="table" {f:if(condition: sortMode, then: 'data-sortable data-reorder-url="/types/{schema.slug}/reorder"')}>
+                            <thead>
+                                <tr>
+                                    <th class="table__check"><input type="checkbox" data-bulk-all aria-label="all"></th>
+                                    <f:if condition="{sortMode}"><th class="table__handle"></th></f:if>
+                                    <f:for each="{columns}" as="column">
+                                        <th>
+                                            <f:if condition="{column.sortable}">
+                                                <f:then>
+                                                    <f:variable name="nextDir" value="{f:if(condition: '{sort} == {column.name} && {dir} == \'ASC\'', then: 'desc', else: 'asc')}" />
+                                                    <a class="table__sort {f:if(condition: '{sort} == {column.name}', then: 'is-active')}" href="{desk:query(set: {sort: column.name, dir: nextDir, page: null})}">{column.label}<f:if condition="{sort} == {column.name}"> {f:if(condition: '{dir} == \'ASC\'', then: '↑', else: '↓')}</f:if></a>
+                                                </f:then>
+                                                <f:else>{column.label}</f:else>
+                                            </f:if>
+                                        </th>
+                                    </f:for>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <f:for each="{rows}" as="row">
+                                    <tr data-id="{row.item.id}" class="{f:if(condition: row.unseen, then: 'is-unseen')}" {f:if(condition: sortMode, then: 'draggable="true"')}>
+                                        <td class="table__check"><input type="checkbox" form="bulk-form" name="ids[]" value="{row.item.id}" data-bulk-check aria-label="select"></td>
+                                        <f:if condition="{sortMode}"><td class="table__handle"><span class="drag-handle" title="{desk:t(key: 'ui.sort')}">⋮⋮</span></td></f:if>
+                                        <f:for each="{columns}" as="column" iteration="ci">
+                                            <f:variable name="cell" value="{row.cells.{column.name}}" />
+                                            <td class="cell cell--{cell.kind}">
+                                                <f:switch expression="{cell.kind}">
+                                                    <f:case value="status"><f:render partial="Status" arguments="{status: cell.text, approval: schema.approval}" /></f:case>
+                                                    <f:case value="actor"><f:render partial="Actor" arguments="{actor: cell.text}" /></f:case>
+                                                    <f:case value="refs"><f:for each="{cell.refs}" as="ref"><a class="chip chip--link" href="{ref.href}">{ref.title}</a> </f:for></f:case>
+                                                    <f:case value="image"><f:if condition="{cell.id}"><img class="thumb thumb--tiny" src="/media/thumb/{cell.id}" alt="" loading="lazy"></f:if><f:if condition="{cell.count} > 1"> <span class="muted">{cell.count}</span></f:if></f:case>
+                                                    <f:case value="date">{desk:date(value: cell.text)}</f:case>
+                                                    <f:case value="count"><span class="muted">{cell.text}</span></f:case>
+                                                    <f:defaultCase>
+                                                        <f:if condition="{ci.isFirst}"><f:then><a class="table__title" href="/types/{schema.slug}/{row.item.id}">{cell.text}</a> <f:render partial="Messages" arguments="{row: row}" /></f:then><f:else>{cell.text}</f:else></f:if>
+                                                    </f:defaultCase>
+                                                </f:switch>
+                                            </td>
+                                        </f:for>
+                                        <td class="table__actions">
+                                            <f:render partial="Actor" arguments="{actor: row.item.updatedBy}" />
+                                            <a class="button button--small button--ghost" href="/types/{schema.slug}/{row.item.id}">{desk:t(key: 'ui.edit')}</a>
+                                        </td>
+                                    </tr>
+                                </f:for>
+                            </tbody>
+                        </table>
+                    </div>
+                </f:defaultCase>
+            </f:switch>
             <f:render partial="Pagination" arguments="{page: page, pages: pages}" />
         </f:then>
         <f:else>
-            <p class="empty"><f:if condition="{q} || {status} || {relItem} || {feature}"><f:then>{desk:t(key: 'ui.noResults')}</f:then><f:else>{desk:t(key: 'ui.noRecords')}</f:else></f:if></p>
+            <p class="empty"><f:if condition="{q} || {status} || {relItem} || {feature} || {filtered}"><f:then>{desk:t(key: 'ui.noResults')}</f:then><f:else>{desk:t(key: 'ui.noRecords')}</f:else></f:if></p>
         </f:else>
     </f:if>
 </f:section>

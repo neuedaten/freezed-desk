@@ -8,6 +8,12 @@ namespace Neuedaten\FreezedDesk\Media;
  */
 final readonly class Media
 {
+    public const ORIGINS = ['upload', 'import', 'generated'];
+
+    /**
+     * @param array<string, mixed>      $extra       Values of the project's media fields (desk.media.fields, A7).
+     * @param array<string, mixed>|null $generatedBy {type, id, generator} of a generated file (A8).
+     */
     public function __construct(
         public int $id,
         public string $file,
@@ -25,6 +31,9 @@ final readonly class Media
         public string $originalName,
         public string $createdAt,
         public string $updatedAt,
+        public array $extra = [],
+        public string $origin = 'upload',
+        public ?array $generatedBy = null,
     ) {
     }
 
@@ -48,7 +57,31 @@ final readonly class Media
             originalName: (string) $row['original_name'],
             createdAt: (string) $row['created_at'],
             updatedAt: (string) $row['updated_at'],
+            extra: self::decode($row['extra'] ?? null) ?? [],
+            origin: (string) ($row['origin'] ?? 'upload'),
+            generatedBy: self::decode($row['generated_by'] ?? null),
         );
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function decode(mixed $json): ?array
+    {
+        if (!is_string($json) || $json === '') {
+            return null;
+        }
+        $value = json_decode($json, true);
+
+        return is_array($value) ? $value : null;
+    }
+
+    public function isVideo(): bool
+    {
+        return str_starts_with($this->mime, 'video/');
+    }
+
+    public function isGenerated(): bool
+    {
+        return $this->origin === 'generated';
     }
 
     public function isImage(): bool
@@ -85,6 +118,8 @@ final readonly class Media
             'mime' => $this->mime,
             'size' => $this->size,
             'name' => $this->originalName,
+            'extra' => $this->extra,
+            'origin' => $this->origin,
         ];
     }
 
@@ -105,6 +140,9 @@ final readonly class Media
             'focal' => $this->focalX === null ? null : ['x' => $this->focalX, 'y' => $this->focalY],
             'originalName' => $this->originalName,
             'createdAt' => $this->createdAt,
+            'extra' => $this->extra === [] ? new \stdClass() : $this->extra,
+            'origin' => $this->origin,
+            'generatedBy' => $this->generatedBy,
         ];
     }
 }

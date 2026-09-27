@@ -12,6 +12,11 @@ use Neuedaten\FreezedDesk\DeskContext;
  */
 class MediaCheckCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
         $context->config->validateMediaRoot();
@@ -31,7 +36,7 @@ class MediaCheckCommand extends AbstractCommand
         foreach ($result['orphans'] as $file) {
             $log->warning('File without record: ' . $file);
             if (!empty($options['adopt'])) {
-                $stored = $media->store($media->root() . '/' . $file, basename($file), [], move: false);
+                $stored = $media->store($media->root() . '/' . $file, basename($file), [], move: false, origin: 'import');
                 $log->notice('  adopted as media #' . $stored->id . ' (' . $stored->file . ')');
                 if ($stored->file !== $file) {
                     @unlink($media->root() . '/' . $file);

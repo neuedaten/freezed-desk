@@ -15,6 +15,11 @@ use Neuedaten\FreezedDesk\Export\Portable;
  */
 class ExportCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
         $log = LogService::getInstance();

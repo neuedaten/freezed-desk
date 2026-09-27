@@ -1,0 +1,27 @@
+<article class="record-card {f:if(condition: row.unseen, then: 'is-unseen')}" data-id="{row.item.id}">
+    <label class="record-card__check"><input type="checkbox" form="bulk-form" name="ids[]" value="{row.item.id}" data-bulk-check aria-label="select"></label>
+    <a class="record-card__image" href="/types/{schema.slug}/{row.item.id}">
+        <f:if condition="{row.image}"><f:then><img src="/media/thumb/{row.image}" alt="" loading="lazy"></f:then><f:else><span class="record-card__placeholder">{schema.labelSingular}</span></f:else></f:if>
+    </a>
+    <div class="record-card__body">
+        <div class="record-card__head">
+            <a class="record-card__title" href="/types/{schema.slug}/{row.item.id}">{row.item.title}</a>
+            <f:render partial="Messages" arguments="{row: row}" />
+        </div>
+        <div class="record-card__meta">
+            <f:render partial="Status" arguments="{status: row.item.status.value, approval: schema.approval}" />
+            <f:if condition="{row.date}"><span>{desk:date(value: row.date)}</span></f:if>
+            <f:render partial="Actor" arguments="{actor: row.item.updatedBy}" />
+        </div>
+        <f:for each="{row.shown}" as="cell">
+            <div class="record-card__field"><span class="muted">{cell.label}:</span>
+                <f:switch expression="{cell.kind}">
+                    <f:case value="refs"><f:for each="{cell.refs}" as="ref">{ref.title} </f:for></f:case>
+                    <f:case value="date">{desk:date(value: cell.text)}</f:case>
+                    <f:case value="image"><f:if condition="{cell.count}">{cell.count}</f:if></f:case>
+                    <f:defaultCase>{cell.text}</f:defaultCase>
+                </f:switch>
+            </div>
+        </f:for>
+    </div>
+</article>

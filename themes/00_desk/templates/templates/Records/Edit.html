@@ -3,28 +3,63 @@
 <f:section name="content">
     <form method="post" action="{f:if(condition: item, then: '/types/{schema.slug}/{item.id}', else: '/types/{schema.slug}/new')}" class="record-form" data-guard>
         <input type="hidden" name="_token" value="{csrfToken}">
+        <f:if condition="{item}"><input type="hidden" name="revision" value="{item.revision}"></f:if>
         <f:if condition="{inboxEntry}"><input type="hidden" name="inbox" value="{inboxEntry.id}"></f:if>
 
         <div class="page-header page-header--sticky">
             <div>
                 <div class="breadcrumb"><a href="/types/{schema.slug}">{schema.label}</a></div>
                 <h1><f:if condition="{item}"><f:then>{item.title}</f:then><f:else>{desk:t(key: 'ui.newRecord', params: {type: schema.labelSingular})}</f:else></f:if>
-                    <f:if condition="{item}"><f:render partial="Status" arguments="{status: item.status.value}" /></f:if></h1>
+                    <f:if condition="{item}"><f:render partial="Status" arguments="{status: item.status.value, approval: schema.approval}" /></f:if></h1>
             </div>
             <div class="page-header__actions">
                 <f:if condition="{previewUrl}"><a class="button button--ghost" href="{previewUrl}" target="_blank" rel="noopener" title="{desk:t(key: 'ui.previewHelp', params: {url: previewUrl})}">{desk:t(key: 'ui.preview')}</a></f:if>
                 <f:if condition="{item}"><a class="button button--ghost" href="/types/{schema.slug}/{item.id}/revisions">{desk:t(key: 'ui.revisions')} ({revisionCount})</a></f:if>
-                <button class="button" type="submit" name="action" value="save">{desk:t(key: 'ui.save')}</button>
+                <button class="button" type="submit" name="action" value="save">{f:if(condition: conflict, then: '{desk:t(key: \'ui.conflict.saveAnyway\')}', else: '{desk:t(key: \'ui.save\')}')}</button>
                 <f:if condition="!{schema.single}">
                     <f:if condition="{item.status.value} == 'published'">
-                        <f:then><button class="button button--ghost" type="submit" name="action" value="draft">{desk:t(key: 'ui.unpublish')}</button></f:then>
-                        <f:else><button class="button button--primary" type="submit" name="action" value="publish">{desk:t(key: 'ui.saveAndPublish')}</button></f:else>
+                        <f:then><button class="button button--ghost" type="submit" name="action" value="draft">{f:if(condition: approvalType, then: '{desk:t(key: \'approval.withdraw\')}', else: '{desk:t(key: \'ui.unpublish\')}')}</button></f:then>
+                        <f:else><button class="button button--primary" type="submit" name="action" value="publish" {f:if(condition: validation.errors, then: 'title="{desk:t(key: \'ui.validation.blocking\')}"')}>{f:if(condition: approvalType, then: '{desk:t(key: \'approval.approve\')}', else: '{desk:t(key: \'ui.saveAndPublish\')}')}</button></f:else>
                     </f:if>
                 </f:if>
             </div>
         </div>
 
         <f:if condition="{errors}"><div class="flash flash--error">{desk:t(key: 'ui.errors')}</div></f:if>
+
+        <f:if condition="{conflict}">
+            <div class="card card--conflict">
+                <p>{desk:t(key: 'ui.conflict', params: {current: conflict.current, base: conflict.base})}</p>
+                <f:if condition="{conflict.diff}">
+                    <table class="table table--diff">
+                        <thead><tr><th>{desk:t(key: 'ui.field')}</th><th>{desk:t(key: 'ui.conflict.mine', params: {base: conflict.base})}</th><th>{desk:t(key: 'ui.conflict.theirs')}</th></tr></thead>
+                        <tbody>
+                            <f:for each="{conflict.diff}" as="row">
+                                <tr><th>{row.label}</th><td><pre>{row.then}</pre></td><td><pre>{row.now}</pre></td></tr>
+                            </f:for>
+                        </tbody>
+                    </table>
+                </f:if>
+            </div>
+        </f:if>
+
+        <f:if condition="{validation.errors} || {validation.warnings}">
+            <div class="card card--messages">
+                <f:if condition="{validation.errors}">
+                    <h2 class="card__title">{desk:t(key: 'ui.validation.errors')}</h2>
+                    <ul class="messages messages--error">
+                        <f:for each="{validation.errors}" as="message" key="fieldName"><li><a href="#f-{fieldName}">{message}</a></li></f:for>
+                    </ul>
+                    <f:if condition="!{validation.publishing}"><p class="muted">{desk:t(key: 'ui.validation.draftHint')}</p></f:if>
+                </f:if>
+                <f:if condition="{validation.warnings}">
+                    <h2 class="card__title">{desk:t(key: 'ui.validation.warnings')}</h2>
+                    <ul class="messages messages--warn">
+                        <f:for each="{validation.warnings}" as="message" key="fieldName"><li><a href="#f-{fieldName}">{message}</a></li></f:for>
+                    </ul>
+                </f:if>
+            </div>
+        </f:if>
 
         <div class="record-layout">
             <div class="record-main">
@@ -36,6 +71,8 @@
                         </dl>
                     </aside>
                 </f:if>
+
+                <f:for each="{panels.main}" as="panel"><f:render partial="{panel.partial}" arguments="{vars: panel.variables, item: item, schema: schema, csrfToken: csrfToken, values: values}" /></f:for>
 
                 <div class="fields">
                     <f:for each="{schema.fields}" as="field" key="fieldName">
@@ -73,14 +110,31 @@
 
                     <f:if condition="{item}">
                         <dl class="dl dl--small">
-                            <dt>{desk:t(key: 'ui.status')}</dt><dd><f:render partial="Status" arguments="{status: item.status.value}" /></dd>
+                            <dt>{desk:t(key: 'ui.status')}</dt><dd><f:render partial="Status" arguments="{status: item.status.value, approval: schema.approval}" /></dd>
                             <dt>{desk:t(key: 'ui.updatedAt')}</dt><dd>{desk:date(value: item.updatedAt)}</dd>
                             <dt>{desk:t(key: 'ui.createdAt')}</dt><dd>{desk:date(value: item.createdAt)}</dd>
                             <f:if condition="{item.publishedAt}"><dt>{desk:t(key: 'ui.publishedAt')}</dt><dd>{desk:date(value: item.publishedAt)}</dd></f:if>
+                            <dt>{desk:t(key: 'ui.updatedBy')}</dt><dd><f:render partial="Actor" arguments="{actor: item.updatedBy}" /></dd>
+                            <dt>{desk:t(key: 'ui.revision')}</dt><dd>{item.revision}</dd>
                             <dt>ID</dt><dd>{item.id}</dd>
                         </dl>
+                        <f:if condition="{approvalType}"><p class="field__help">{desk:t(key: 'approval.needed')}</p></f:if>
                     </f:if>
                 </div>
+
+                <f:if condition="{recordActions}">
+                    <div class="card">
+                        <h2 class="card__title">{desk:t(key: 'ui.recordActions')}</h2>
+                        <div class="button-row">
+                            <f:for each="{recordActions}" as="recordAction" key="actionName">
+                                <button type="button" class="button button--small action-run" data-action-url="/types/{schema.slug}/{item.id}/actions/{actionName}/run" data-output="#record-output" data-action-reload title="{recordAction.command}">▶ {recordAction.label}</button>
+                            </f:for>
+                        </div>
+                        <pre class="output output--small" id="record-output" hidden></pre>
+                    </div>
+                </f:if>
+
+                <f:for each="{panels.side}" as="panel"><f:render partial="{panel.partial}" arguments="{vars: panel.variables, item: item, schema: schema, csrfToken: csrfToken, values: values}" /></f:for>
 
                 <f:if condition="{referencing}">
                     <div class="card">

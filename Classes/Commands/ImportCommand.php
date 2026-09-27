@@ -4,6 +4,7 @@ namespace Neuedaten\FreezedDesk\Commands;
 
 use Neuedaten\Freezed\Services\LogService;
 use Neuedaten\FreezedDesk\DeskContext;
+use Neuedaten\FreezedDesk\Storage\Actor;
 use Neuedaten\FreezedDesk\Exception\DeskException;
 use Neuedaten\FreezedDesk\Exception\ValidationException;
 use Neuedaten\FreezedDesk\Schema\TypeSchema;
@@ -15,8 +16,15 @@ use Neuedaten\FreezedDesk\Schema\TypeSchema;
  */
 class ImportCommand extends AbstractCommand
 {
+    protected function answersInJson(): bool
+    {
+        return false;
+    }
+
     protected function run(DeskContext $context, array $args, array $options): int
     {
+        // Restoring data, not an editorial change: approved records stay approved (A3).
+        $context->actAs(Actor::Import);
         $log = LogService::getInstance();
         $root = $args[0] ?? $context->config->exportPath();
 

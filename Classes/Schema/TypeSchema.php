@@ -23,11 +23,18 @@ final class TypeSchema
         'sort', 'lastmod', 'build', 'type', 'template',
     ];
 
+    /** List views a type can offer (listViews). */
+    public const LIST_VIEWS = ['table', 'cards', 'agenda'];
+
     /**
      * @param array<string, FieldDefinition>                          $fields
      * @param array<string, array{label: string, template: string}>   $variants
      * @param array<string, string>                                   $orderBy      field => ASC|DESC
      * @param string[]                                                $listColumns
+     * @param string|null                                             $approval     'ui': only a person in the UI can publish (docs/approval.md)
+     * @param array<string, array<string, mixed>>                     $listViews    view => options, first is the default
+     * @param string[]                                                $listFilters  fields offered as filters in the list
+     * @param array<string, array{label: string, command: string, bulk: bool, when: \Closure|null}> $actions record actions
      */
     public function __construct(
         public readonly string $slug,
@@ -43,7 +50,32 @@ final class TypeSchema
         public readonly bool $built,
         public readonly ?\Closure $variablesCallback,
         public readonly string $file,
+        public readonly ?string $approval = null,
+        public readonly ?\Closure $validateCallback = null,
+        public readonly ?\Closure $warningsCallback = null,
+        public readonly ?\Closure $guardCallback = null,
+        public readonly array $listViews = ['table' => []],
+        public readonly array $listFilters = [],
+        public readonly array $actions = [],
     ) {
+    }
+
+    /** Publishing is reserved for a person in the UI (approval: 'ui'). */
+    public function needsUiApproval(): bool
+    {
+        return $this->approval === 'ui';
+    }
+
+    /** @return array<string, FieldDefinition> Fields only the system writes (system: true). */
+    public function systemFields(): array
+    {
+        return array_filter($this->fields, static fn (FieldDefinition $f): bool => $f->system);
+    }
+
+    /** @return string The view a list opens with. */
+    public function defaultListView(): string
+    {
+        return (string) (array_key_first($this->listViews) ?? 'table');
     }
 
     public function field(string $name): ?FieldDefinition
@@ -91,6 +123,10 @@ final class TypeSchema
             'single' => $this->single,
             'built' => $this->built,
             'variants' => $this->variants,
+            'approval' => $this->approval,
+            'listViews' => array_keys($this->listViews),
+            'listFilters' => $this->listFilters,
+            'actions' => array_map(static fn (array $a): array => ['label' => $a['label'], 'command' => $a['command'], 'bulk' => $a['bulk']], $this->actions),
             'fields' => array_map(static fn (FieldDefinition $f): array => $f->toArray(), $this->fields),
         ];
     }

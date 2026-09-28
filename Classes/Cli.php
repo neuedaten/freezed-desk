@@ -70,6 +70,9 @@ final class Cli
         'outbox:push' => Commands\OutboxPushCommand::class,
         'outbox:pull' => Commands\OutboxPullCommand::class,
         'outbox:status' => Commands\OutboxStatusCommand::class,
+        'reviews' => Commands\ReviewsCommand::class,
+        'review:list' => Commands\ReviewListCommand::class,
+        'review:done' => Commands\ReviewDoneCommand::class,
         'agent' => Commands\AgentCommand::class,
     ];
 
@@ -79,6 +82,7 @@ final class Cli
         'media:add', 'media:list', 'media:get', 'media:update', 'media:delete', 'media:usage', 'media:prune',
         'inbox:list', 'inbox:show', 'inbox:assign', 'inbox:set', 'actions', 'status', 'preview-url',
         'outbox', 'outbox:push', 'outbox:pull', 'outbox:status',
+        'reviews', 'review:list', 'review:done',
     ];
 
     /** The raw arguments of the freezed-desk binary, for repeatable options (Commands\Options). */
@@ -364,6 +368,14 @@ JSON interface (for scripts and agents, see docs/cli.md and docs/agents.md):
   outbox push|pull|status
                     The outbox (docs/outbox.md). push may be reserved for
                     the UI (desk.outbox.push).
+  review:list [<type>] [--queue:open]
+                    Review queues (docs/review.md): counts per type, or the
+                    records of one queue.
+  reviews [<type>[/<slug>]] [--open] [--snapshot]
+                    A record's reviews, or the open points to work through.
+  review:done <point-id> … | <type>/<slug> --all [--note:…] [--reopen]
+                    Mark review points as done (reviews themselves are made
+                    in the UI).
 
 Commands that change something take --dry-run. The CLI acts as "cli", or
 as "agent" with --actor:agent or DESK_ACTOR=agent (docs/approval.md).

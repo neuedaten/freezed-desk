@@ -30,6 +30,10 @@ removed; anything else in the folder is left alone.
 }
 ```
 
+The review history of a record goes to
+`data/export/_reviews/<type>/<slug>.json` ([review.md](review.md)); import
+adds the reviews that are missing.
+
 Media files themselves are not part of the export; they are binary and live
 in `data/media/`.
 

@@ -1,0 +1,24 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'review.title')}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <h1>{desk:t(key: 'review.title')}</h1>
+        <f:if condition="{openTotal}"><span class="muted">{desk:t(key: 'review.openTotal', params: {count: openTotal})}</span></f:if>
+    </div>
+
+    <div class="columns">
+        <f:for each="{types}" as="entry">
+            <section class="card">
+                <div class="review-type__head">
+                    <h2 class="card__title"><a href="/review/{entry.schema.slug}">{entry.schema.label}</a></h2>
+                    <f:if condition="{entry.open}"><a class="button button--primary button--small" href="/review/{entry.schema.slug}?queue=open">{desk:t(key: 'review.start')} ({entry.open})</a></f:if>
+                </div>
+                <ul class="list list--compact">
+                    <f:for each="{entry.queues}" as="tab">
+                        <li><a href="/review/{entry.schema.slug}?queue={tab.key}">{tab.label}</a> <span class="muted">{tab.count}</span></li>
+                    </f:for>
+                </ul>
+            </section>
+        </f:for>
+    </div>
+</f:section>

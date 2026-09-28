@@ -127,6 +127,8 @@ The most used ones; [cli.md](cli.md) lists every command and option.
 | `media:get`, `media:update`, `media:usage <id\|file>` | One file, its metadata, where it is used |
 | `action <type>/<slug> <name>` | Run a record action of the schema (e.g. rendering) |
 | `status` | The overview as JSON |
+| `reviews [<type>]`, `reviews <type>/<slug>` | Open review points to work through, grouped by record; a record's review history ([review.md](review.md)) |
+| `review:done <point-id> … --note:"…"` | Mark a review point done after the record was changed as it asks |
 
 Errors are JSON on stdout with exit code 1:
 

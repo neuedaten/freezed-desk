@@ -1,0 +1,13 @@
+<f:comment>One point of a review: field, quick notes, text, done state. Arguments: point (with label and tagLabels), showLabel.</f:comment><div class="review-point {f:if(condition: point.open, then: 'is-open', else: 'is-done')}">
+    <f:if condition="{showLabel}"><f:if condition="{point.field}"><f:then><a class="review-point__label" href="#f-{point.field}">{point.label}</a></f:then><f:else><span class="review-point__label">{point.label}</span></f:else></f:if></f:if>
+    <f:if condition="{point.tagLabels}"><div class="review-point__tags"><f:for each="{point.tagLabels}" as="tagLabel"><span class="review-chip">{tagLabel}</span> </f:for></div></f:if>
+    <f:if condition="{point.text}"><div class="review-point__text">{point.text -> desk:linkify()}</div></f:if>
+    <f:if condition="!{point.open}">
+        <div class="review-point__done muted">
+            <f:if condition="{point.confirms}">
+                <f:then>✓ {desk:t(key: 'review.confirmed')}</f:then>
+                <f:else>✓ {desk:t(key: 'review.done')} {desk:date(value: point.doneAt)} <f:render partial="Actor" arguments="{actor: point.doneBy}" /><f:if condition="{point.doneNote}"> · {point.doneNote -> desk:linkify()}</f:if></f:else>
+            </f:if>
+        </div>
+    </f:if>
+</div>

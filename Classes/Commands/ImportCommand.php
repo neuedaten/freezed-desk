@@ -95,7 +95,21 @@ class ImportCommand extends AbstractCommand
             }
         }
 
-        $log->success(sprintf('Imported %d record%s and %d media entr%s from %s%s', $imported, $imported === 1 ? '' : 's', $mediaCount, $mediaCount === 1 ? 'y' : 'ies', $root, $failed > 0 ? ' (' . $failed . ' failed)' : ''));
+        // Review histories, for the records that exist now.
+        $reviewCount = 0;
+        foreach ($context->schemas()->all() as $schema) {
+            foreach (glob($root . '/' . ExportCommand::REVIEWS . '/' . $schema->slug . '/*.json') ?: [] as $file) {
+                $history = self::readJson($file);
+                $item = is_array($history) && isset($history['slug']) ? $context->repository()->findBySlug($schema->slug, (string) $history['slug']) : null;
+                if ($item === null) {
+                    $log->warning('Skipped ' . self::relative($file, $root) . ': no such record.');
+                    continue;
+                }
+                $reviewCount += $context->reviews()->importItem($item, (array) ($history['reviews'] ?? []));
+            }
+        }
+
+        $log->success(sprintf('Imported %d record%s, %d media entr%s and %d review%s from %s%s', $imported, $imported === 1 ? '' : 's', $mediaCount, $mediaCount === 1 ? 'y' : 'ies', $reviewCount, $reviewCount === 1 ? '' : 's', $root, $failed > 0 ? ' (' . $failed . ' failed)' : ''));
 
         return $failed > 0 ? 1 : 0;
     }

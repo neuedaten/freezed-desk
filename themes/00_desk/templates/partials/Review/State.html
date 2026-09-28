@@ -1,0 +1,1 @@
+<f:comment>Where a record stands in review: never reviewed, changed since, or the last decision. Arguments: state (ReviewRepository::state()).</f:comment><f:if condition="{state}"><span class="badge badge--review-{state.state}">{desk:t(key: 'review.state.{state.state}')}</span></f:if>

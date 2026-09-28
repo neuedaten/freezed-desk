@@ -1,0 +1,54 @@
+<f:layout name="Desk" />
+<f:section name="title">{queueLabel} · {schema.label} · {desk:t(key: 'review.title')}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb"><a href="/review">{desk:t(key: 'review.title')}</a></div>
+            <h1>{schema.label} <span class="muted">{queueLabel}</span></h1>
+        </div>
+        <div class="page-header__actions">
+            <f:if condition="{first}"><a class="button button--primary" href="/review/{schema.slug}/{first.id}?queue={queue}">{desk:t(key: 'review.start')}</a></f:if>
+        </div>
+    </div>
+
+    <nav class="tabs tabs--scroll">
+        <f:for each="{tabs}" as="tab">
+            <a class="tab {f:if(condition: '{tab.key} == {queue}', then: 'is-active')}" href="/review/{schema.slug}?queue={tab.key}">{tab.label} <span class="muted">{tab.count}</span></a>
+        </f:for>
+    </nav>
+
+    <f:if condition="{rows}">
+        <f:then>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{desk:t(key: 'ui.title')}</th>
+                            <th>{desk:t(key: 'ui.status')}</th>
+                            <th>{desk:t(key: 'review.title')}</th>
+                            <th>{desk:t(key: 'review.lastReview')}</th>
+                            <th>{desk:t(key: 'review.queue.points')}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <f:for each="{rows}" as="row">
+                            <tr>
+                                <td><a class="table__title" href="/review/{schema.slug}/{row.item.id}?queue={queue}">{row.item.title}</a></td>
+                                <td><f:render partial="Status" arguments="{status: row.item.status.value, approval: schema.approval}" /></td>
+                                <td><f:render partial="Review/State" arguments="{state: row.state}" /></td>
+                                <td><f:if condition="{row.state.review}"><f:then>{desk:date(value: row.state.review.createdAt)}<f:if condition="{row.state.review.reviewer}"> <span class="muted">{row.state.review.reviewer}</span></f:if></f:then><f:else><span class="muted">–</span></f:else></f:if></td>
+                                <td><f:if condition="{row.state.openPoints}"><a class="review-flag" href="/types/{schema.slug}/{row.item.id}#review">✎ {row.state.openPoints}</a></f:if></td>
+                                <td class="table__actions">
+                                    <a class="button button--small" href="/review/{schema.slug}/{row.item.id}?queue={queue}">{desk:t(key: 'review.open')}</a>
+                                    <a class="button button--small button--ghost" href="/types/{schema.slug}/{row.item.id}">{desk:t(key: 'ui.edit')}</a>
+                                </td>
+                            </tr>
+                        </f:for>
+                    </tbody>
+                </table>
+            </div>
+        </f:then>
+        <f:else><p class="empty">{desk:t(key: 'review.empty')}</p></f:else>
+    </f:if>
+</f:section>

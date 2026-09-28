@@ -90,6 +90,16 @@ return [
     // Revisions kept per record. 0 disables revisions.
     'revisions' => 50,
 
+    // Reviews (docs/review.md). "types": the types offered for review, null
+    // for every type that is not single. "tags": the quick notes offered
+    // under each field, key => label; null takes the built-in ones (ok,
+    // unsure, source, remove, more, rephrase). Keys are stored, so keep them
+    // once reviews use them.
+    'review' => [
+        'types' => null,
+        'tags' => null,
+    ],
+
     // Language of the UI and its messages: "de" or "en".
     'locale' => 'de',
 

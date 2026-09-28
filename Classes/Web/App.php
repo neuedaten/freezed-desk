@@ -16,6 +16,7 @@ use Neuedaten\FreezedDesk\Web\Controllers\FoldersController;
 use Neuedaten\FreezedDesk\Web\Controllers\InboxController;
 use Neuedaten\FreezedDesk\Web\Controllers\MediaController;
 use Neuedaten\FreezedDesk\Web\Controllers\RecordsController;
+use Neuedaten\FreezedDesk\Web\Controllers\ReviewController;
 
 /**
  * The desk web application: one request in, one response out. Bootstraps
@@ -98,6 +99,8 @@ final class App
         $this->view->share('projectName', $this->context->config->projectName());
         $this->view->share('projectRoot', $this->context->config->projectRoot);
         $this->view->share('extensionNavigation', $this->extensionNavigation());
+        $this->view->share('reviewEnabled', $this->context->reviews()->types() !== []);
+        $this->view->share('reviewOpen', $this->context->reviews()->openTotal());
 
         $match = $this->router->match($request->method, $request->path);
         if ($match === null) {
@@ -174,6 +177,16 @@ final class App
         $r->add('GET', '/types/{type}/{id}/preview', [RecordsController::class, 'preview'], 'preview-url');
         $r->add('GET', '/types/{type}/{id}/revisions', [RecordsController::class, 'revisions'], 'revisions');
         $r->add('POST', '/types/{type}/{id}/revisions/{revision}/restore', [RecordsController::class, 'restore'], 'restore');
+
+        $r->add('GET', '/types/{type}/{id}/reviews', [ReviewController::class, 'history'], 'reviews');
+
+        $r->add('GET', '/review', [ReviewController::class, 'index'], 'review:list');
+        $r->add('GET', '/review/{type}', [ReviewController::class, 'queue'], 'review:list');
+        $r->add('GET', '/review/{type}/{id}', [ReviewController::class, 'show'], 'reviews');
+        $r->add('POST', '/review/{type}/{id}', [ReviewController::class, 'submit'], 'ui:a review is a person\'s judgement, like approving');
+        $r->add('POST', '/reviews/points/{id}/done', [ReviewController::class, 'pointDone'], 'review:done');
+        $r->add('POST', '/reviews/points/{id}/reopen', [ReviewController::class, 'pointReopen'], 'review:done');
+        $r->add('POST', '/reviews/{id}/done', [ReviewController::class, 'reviewDone'], 'review:done');
 
         $r->add('GET', '/folders/{type}', [FoldersController::class, 'index'], 'ui:folder types are read from content/ by the core; the CLI reads the files');
 

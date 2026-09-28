@@ -46,8 +46,10 @@
     // -------------------------------------------------- unsaved guard ---
     document.querySelectorAll('form[data-guard]').forEach(form => {
         let dirty = false;
-        form.addEventListener('input', () => { dirty = true; });
-        form.addEventListener('change', () => { dirty = true; });
+        // Only fields of this form count; an input tied to another form
+        // (form="…", e.g. the note for a review point) does not.
+        form.addEventListener('input', e => { if (e.target.form === form) dirty = true; });
+        form.addEventListener('change', e => { if (e.target.form === form) dirty = true; });
         form.addEventListener('submit', () => { dirty = false; });
         window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
     });
@@ -438,6 +440,17 @@
     on(document, '[data-hours-remove]', 'click', (e, button) => {
         button.closest('[data-hours-range]').remove();
     });
+
+    // -------------------------------------------------------- review ---
+    // Alt + arrow keys page through the queue.
+    if (document.querySelector('form[data-review]')) {
+        document.addEventListener('keydown', e => {
+            if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+            const link = e.key === 'ArrowLeft' ? document.querySelector('[data-review-prev]')
+                : e.key === 'ArrowRight' ? document.querySelector('[data-review-next]') : null;
+            if (link) { e.preventDefault(); link.click(); }
+        });
+    }
 
     // ------------------------------------------------------- actions ---
     on(document, '.action-run', 'click', async (e, button) => {

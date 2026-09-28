@@ -62,6 +62,7 @@ class DashboardController extends Controller
             'unseen' => array_slice($unseen, 0, 20),
             'unseenCount' => count($unseen),
             'panels' => $panels,
+            'review' => \Neuedaten\FreezedDesk\Commands\OverviewCommand::review($this->context),
         ]);
     }
 }

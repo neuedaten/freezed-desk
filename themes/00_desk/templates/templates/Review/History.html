@@ -1,0 +1,54 @@
+<f:layout name="Desk" />
+<f:section name="title">{desk:t(key: 'review.history')} · {item.title}</f:section>
+<f:section name="content">
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb"><a href="/types/{schema.slug}">{schema.label}</a> › <a href="/types/{schema.slug}/{item.id}">{item.title}</a></div>
+            <h1>{desk:t(key: 'review.history')}</h1>
+        </div>
+        <div class="page-header__actions">
+            <f:if condition="{reviewable}"><a class="button button--primary" href="/review/{schema.slug}/{item.id}?queue=all">{desk:t(key: 'review.open')}</a></f:if>
+        </div>
+    </div>
+
+    <f:if condition="{reviews}">
+        <f:then>
+            <f:for each="{reviews}" as="review">
+                <section class="card review-entry">
+                    <div class="review-entry__head">
+                        <h2 class="card__title"><span class="badge badge--review-{review.decision}">{desk:t(key: 'review.state.{review.decision}')}</span> {desk:date(value: review.createdAt)}<f:if condition="{review.reviewer}"> · {desk:t(key: 'review.by', params: {reviewer: review.reviewer})}</f:if></h2>
+                        <span class="muted"><a href="/types/{schema.slug}/{item.id}/revisions">{desk:t(key: 'review.reviewedRevision', params: {revision: review.revision})}</a><f:if condition="{review.openPoints}"> · {desk:t(key: 'review.openCount', params: {count: review.openPoints})}</f:if></span>
+                    </div>
+                    <f:if condition="{review.points}">
+                        <f:then>
+                            <f:for each="{review.points}" as="point">
+                                <div class="review-entry__point">
+                                    <f:render partial="Review/Point" arguments="{point: point, showLabel: 1}" />
+                                    <f:if condition="{point.open}">
+                                        <f:then>
+                                            <form method="post" action="/reviews/points/{point.id}/done" class="review-done">
+                                                <input type="hidden" name="_token" value="{csrfToken}">
+                                                <input class="input" type="text" name="note" placeholder="{desk:t(key: 'review.doneNote')}">
+                                                <button class="button button--small">{desk:t(key: 'review.markDone')}</button>
+                                            </form>
+                                        </f:then>
+                                        <f:else>
+                                            <f:if condition="!{point.confirms}">
+                                                <form method="post" action="/reviews/points/{point.id}/reopen" class="inline">
+                                                    <input type="hidden" name="_token" value="{csrfToken}">
+                                                    <button class="button button--small button--ghost">{desk:t(key: 'review.reopen')}</button>
+                                                </form>
+                                            </f:if>
+                                        </f:else>
+                                    </f:if>
+                                </div>
+                            </f:for>
+                        </f:then>
+                        <f:else><p class="muted">{desk:t(key: 'review.noPoints')}</p></f:else>
+                    </f:if>
+                </section>
+            </f:for>
+        </f:then>
+        <f:else><p class="empty">{desk:t(key: 'review.noHistory')}</p></f:else>
+    </f:if>
+</f:section>

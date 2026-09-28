@@ -1,0 +1,25 @@
+<f:comment>Open points of the record's reviews on the record page. The buttons submit the forms after the record form (RecordPanelForms), so marking a point done never saves the record. Arguments: review, schema, item.</f:comment><f:if condition="{review.reviews}">
+    <section class="card card--review" id="review">
+        <div class="review-entry__head">
+            <h2 class="card__title">{desk:t(key: 'review.openPoints')} <span class="muted">{review.openCount}</span></h2>
+            <a href="/types/{schema.slug}/{item.id}/reviews">{desk:t(key: 'review.history')}</a>
+        </div>
+        <f:for each="{review.reviews}" as="entry">
+            <div class="review-panel__review">
+                <p class="muted"><span class="badge badge--review-{entry.decision}">{desk:t(key: 'review.state.{entry.decision}')}</span> {desk:date(value: entry.createdAt)}<f:if condition="{entry.reviewer}"> · {desk:t(key: 'review.by', params: {reviewer: entry.reviewer})}</f:if> · {desk:t(key: 'review.reviewedRevision', params: {revision: entry.revision})}</p>
+                <f:for each="{entry.open}" as="point">
+                    <div class="review-entry__point">
+                        <f:render partial="Review/Point" arguments="{point: point, showLabel: 1}" />
+                        <div class="review-done">
+                            <input class="input" type="text" name="note" form="review-point-{point.id}" placeholder="{desk:t(key: 'review.doneNote')}" aria-label="{desk:t(key: 'review.doneNote')}">
+                            <button class="button button--small" type="submit" form="review-point-{point.id}">{desk:t(key: 'review.markDone')}</button>
+                        </div>
+                    </div>
+                </f:for>
+                <f:if condition="{entry.open -> f:count()} > 1">
+                    <button class="button button--small button--ghost" type="submit" form="review-done-{entry.id}">{desk:t(key: 'review.markAllDone')}</button>
+                </f:if>
+            </div>
+        </f:for>
+    </section>
+</f:if>

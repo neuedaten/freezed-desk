@@ -44,6 +44,9 @@
 
         <div class="sidebar__group">&nbsp;</div>
         <a class="sidebar__link {f:if(condition: '{currentPath} == \'/media\'', then: 'is-active')}" href="/media">{desk:t(key: 'ui.media')}</a>
+        <f:if condition="{reviewEnabled}">
+            <a class="sidebar__link {f:if(condition: '{currentPath} == \'/review\'', then: 'is-active')}" href="/review">{desk:t(key: 'review.title')}<f:if condition="{reviewOpen}"> <span class="sidebar__badge" title="{desk:t(key: 'review.openTotal', params: {count: reviewOpen})}">{reviewOpen}</span></f:if></a>
+        </f:if>
         <f:if condition="{inboxEnabled}">
             <a class="sidebar__link {f:if(condition: '{currentPath} == \'/inbox\'', then: 'is-active')}" href="/inbox">{desk:t(key: 'ui.inbox')}</a>
         </f:if>

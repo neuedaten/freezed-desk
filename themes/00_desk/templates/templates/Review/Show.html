@@ -1,0 +1,115 @@
+<f:layout name="Desk" />
+<f:section name="title">{item.title} · {desk:t(key: 'review.title')}</f:section>
+<f:section name="content">
+    <form method="post" action="/review/{schema.slug}/{item.id}?queue={queue}" class="review" data-guard data-review>
+        <input type="hidden" name="_token" value="{csrfToken}">
+        <input type="hidden" name="hash" value="{hash}">
+        <input type="hidden" name="queue" value="{queue}">
+
+        <div class="page-header">
+            <div>
+                <div class="breadcrumb"><a href="/review">{desk:t(key: 'review.title')}</a> › <a href="/review/{schema.slug}?queue={queue}">{schema.label}: {queueLabel}</a></div>
+                <h1>{item.title}
+                    <f:render partial="Status" arguments="{status: item.status.value, approval: schema.approval}" />
+                    <f:render partial="Review/State" arguments="{state: state}" /></h1>
+            </div>
+        </div>
+
+        <f:if condition="{error}"><div class="flash flash--error" role="alert">{error}</div></f:if>
+
+        <div class="review-layout">
+            <div class="review-main">
+                <f:for each="{fields}" as="field">
+                    <section class="review-field" id="r-{field.name}">
+                        <h2 class="review-field__label">{field.label}<f:if condition="{field.internal}"> <span class="field__flag">{desk:t(key: 'review.internal')}</span></f:if><f:if condition="{field.system}"> <span class="field__flag">{desk:t(key: 'review.system')}</span></f:if></h2>
+                        <div class="review-field__value">{field.html -> f:format.raw()}</div>
+
+                        <f:if condition="{field.open}">
+                            <div class="review-earlier">
+                                <f:for each="{field.open}" as="point">
+                                    <div class="review-earlier__point"><span class="muted">{desk:t(key: 'review.openSince', params: {date: '{desk:date(value: point.reviewedAt, format: \'d.m.Y\')}'})}:</span>
+                                        <f:render partial="Review/Point" arguments="{point: point, showLabel: 0}" /></div>
+                                </f:for>
+                            </div>
+                        </f:if>
+
+                        <div class="review-note">
+                            <div class="review-tags" role="group" aria-label="{field.label}">
+                                <f:for each="{field.tags}" as="tag">
+                                    <label class="review-tag review-tag--{tag.key}"><input type="checkbox" name="notes[{field.name}][tags][]" value="{tag.key}" {f:if(condition: tag.checked, then: 'checked')}><span>{tag.label}</span></label>
+                                </f:for>
+                            </div>
+                            <textarea class="input review-note__text" name="notes[{field.name}][text]" rows="1" data-autogrow placeholder="{desk:t(key: 'review.note')}" aria-label="{field.label}: {desk:t(key: 'review.note')}">{field.text}</textarea>
+                        </div>
+                    </section>
+                </f:for>
+                <f:if condition="{emptyFields}"><p class="review-empty muted">{desk:t(key: 'review.emptyFields')}: {emptyFields}</p></f:if>
+            </div>
+
+            <aside class="review-side">
+                <div class="card review-panel">
+                    <div class="review-nav">
+                        <f:if condition="{previous}">
+                            <f:then><a class="button button--ghost button--small" href="/review/{schema.slug}/{previous}?queue={queue}" data-review-prev>{desk:t(key: 'review.previous')}</a></f:then>
+                            <f:else><span class="button button--ghost button--small is-disabled" aria-disabled="true">{desk:t(key: 'review.previous')}</span></f:else>
+                        </f:if>
+                        <span class="review-nav__position muted"><f:if condition="{position}"><f:then>{desk:t(key: 'review.position', params: {position: position, total: total})}</f:then><f:else>{desk:t(key: 'review.notInQueue', params: {queue: queueLabel, total: total})}</f:else></f:if></span>
+                        <f:if condition="{next}">
+                            <f:then><a class="button button--ghost button--small" href="/review/{schema.slug}/{next}?queue={queue}" data-review-next>{desk:t(key: 'review.next')}</a></f:then>
+                            <f:else><span class="button button--ghost button--small is-disabled" aria-disabled="true">{desk:t(key: 'review.next')}</span></f:else>
+                        </f:if>
+                    </div>
+
+                    <p class="review-last muted">
+                        <f:if condition="{lastReview}">
+                            <f:then>{desk:t(key: 'review.lastReview')}: {desk:t(key: 'review.state.{lastReview.decision}')} · {desk:date(value: lastReview.createdAt)}<f:if condition="{lastReview.reviewer}"> · {desk:t(key: 'review.by', params: {reviewer: lastReview.reviewer})}</f:if></f:then>
+                            <f:else>{desk:t(key: 'review.never')}</f:else>
+                        </f:if>
+                    </p>
+
+                    <f:if condition="{validation.errors}">
+                        <ul class="messages messages--error">
+                            <f:for each="{validation.errors}" as="message" key="fieldName"><li><a href="#r-{fieldName}">{message}</a></li></f:for>
+                        </ul>
+                    </f:if>
+
+                    <label class="field__label" for="review-comment">{desk:t(key: 'review.comment')}</label>
+                    <f:if condition="{generalOpen}">
+                        <div class="review-earlier">
+                            <f:for each="{generalOpen}" as="point">
+                                <div class="review-earlier__point"><span class="muted">{desk:t(key: 'review.openSince', params: {date: '{desk:date(value: point.reviewedAt, format: \'d.m.Y\')}'})}:</span>
+                                    <f:render partial="Review/Point" arguments="{point: point, showLabel: 0}" /></div>
+                            </f:for>
+                        </div>
+                    </f:if>
+                    <textarea class="input" id="review-comment" name="comment" rows="4" data-autogrow placeholder="{desk:t(key: 'review.commentPlaceholder')}">{comment}</textarea>
+
+                    <div class="review-decisions" role="group" aria-label="{desk:t(key: 'review.decision')}">
+                        <f:for each="{decisions}" as="decision">
+                            <button class="button review-decision review-decision--{decision}" type="submit" name="decision" value="{decision}" title="{desk:t(key: 'review.decisionHelp.{decision}')}">{desk:t(key: 'review.decision.{decision}')}</button>
+                        </f:for>
+                    </div>
+
+                    <ul class="review-links list list--compact">
+                        <li><a href="/types/{schema.slug}/{item.id}" target="_blank" rel="noopener">{desk:t(key: 'review.editRecord')}</a></li>
+                        <f:if condition="{previewUrl}"><li><a href="{previewUrl}" target="_blank" rel="noopener">{desk:t(key: 'ui.preview')}</a></li></f:if>
+                        <li><a href="/types/{schema.slug}/{item.id}/reviews" target="_blank" rel="noopener">{desk:t(key: 'review.historyButton', params: {count: historyCount})}</a></li>
+                    </ul>
+                    <p class="field__help">{desk:t(key: 'review.keys')}</p>
+                </div>
+
+                <f:if condition="{urls}">
+                    <div class="card review-urls">
+                        <h2 class="card__title">{desk:t(key: 'review.urls')} <span class="muted">{urls -> f:count()}</span></h2>
+                        <ul class="list list--compact">
+                            <f:for each="{urls}" as="url">
+                                <li><a href="{url.href}" target="_blank" rel="noopener noreferrer">{url.text}</a>
+                                    <span class="review-urls__fields muted"><f:for each="{url.fields}" as="fieldLabel" iteration="it">{fieldLabel}<f:if condition="!{it.isLast}">, </f:if></f:for></span></li>
+                            </f:for>
+                        </ul>
+                    </div>
+                </f:if>
+            </aside>
+        </div>
+    </form>
+</f:section>

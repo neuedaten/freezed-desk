@@ -110,7 +110,7 @@
                                                     <f:case value="date">{desk:date(value: cell.text)}</f:case>
                                                     <f:case value="count"><span class="muted">{cell.text}</span></f:case>
                                                     <f:defaultCase>
-                                                        <f:if condition="{ci.isFirst}"><f:then><a class="table__title" href="/types/{schema.slug}/{row.item.id}">{cell.text}</a> <f:render partial="Messages" arguments="{row: row}" /></f:then><f:else>{cell.text}</f:else></f:if>
+                                                        <f:if condition="{ci.isFirst}"><f:then><a class="table__title" href="/types/{schema.slug}/{row.item.id}">{cell.text}</a> <f:render partial="Messages" arguments="{row: row}" /> <f:render partial="Review/Flag" arguments="{row: row, schema: schema}" /></f:then><f:else>{cell.text}</f:else></f:if>
                                                     </f:defaultCase>
                                                 </f:switch>
                                             </td>

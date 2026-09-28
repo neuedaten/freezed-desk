@@ -1,0 +1,12 @@
+<f:comment>The forms the buttons of RecordPanel submit, outside the record form. Arguments: review, schema, item, csrfToken.</f:comment><f:for each="{review.reviews}" as="entry">
+    <form id="review-done-{entry.id}" method="post" action="/reviews/{entry.id}/done" hidden>
+        <input type="hidden" name="_token" value="{csrfToken}">
+        <input type="hidden" name="back" value="/types/{schema.slug}/{item.id}">
+    </form>
+    <f:for each="{entry.open}" as="point">
+        <form id="review-point-{point.id}" method="post" action="/reviews/points/{point.id}/done" hidden>
+            <input type="hidden" name="_token" value="{csrfToken}">
+            <input type="hidden" name="back" value="/types/{schema.slug}/{item.id}">
+        </form>
+    </f:for>
+</f:for>

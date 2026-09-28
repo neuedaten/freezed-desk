@@ -132,6 +132,34 @@ final class Migrations
                 'CREATE INDEX outbox_item ON outbox (item_id)',
                 'CREATE INDEX outbox_state ON outbox (state)',
             ],
+            // 0.3: reviews, a person's decision about a record with points
+            // to work through; kept as history with the state reviewed.
+            4 => [
+                'CREATE TABLE reviews (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    uid TEXT NOT NULL UNIQUE,
+                    item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+                    revision INTEGER NOT NULL,
+                    hash TEXT NOT NULL,
+                    decision TEXT NOT NULL,
+                    reviewer TEXT NOT NULL DEFAULT \'\',
+                    snapshot TEXT NOT NULL DEFAULT \'{}\',
+                    created_at TEXT NOT NULL
+                )',
+                'CREATE INDEX reviews_item ON reviews (item_id, id)',
+                'CREATE TABLE review_points (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    review_id INTEGER NOT NULL REFERENCES reviews (id) ON DELETE CASCADE,
+                    field TEXT NULL,
+                    tags TEXT NOT NULL DEFAULT \'[]\',
+                    text TEXT NOT NULL DEFAULT \'\',
+                    done_at TEXT NULL,
+                    done_by TEXT NOT NULL DEFAULT \'\',
+                    done_note TEXT NOT NULL DEFAULT \'\'
+                )',
+                'CREATE INDEX review_points_review ON review_points (review_id)',
+                'CREATE INDEX review_points_open ON review_points (done_at)',
+            ],
         ];
     }
 

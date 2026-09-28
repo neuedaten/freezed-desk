@@ -207,8 +207,8 @@ class RecordsController extends Controller
 
             return $this->form($schema, $exception->current, $values, [], $request, $input, 409, $conflict);
         } catch (ValidationException $exception) {
+            // The form shows the errors itself; a flash would turn up again on the next page.
             $values = $this->normalize($schema, $input['fields']);
-            $this->flash('error', $this->t('ui.errors'));
 
             return $this->form($schema, $item, $values, $exception->errors, $request, $input, 422);
         }
@@ -268,7 +268,44 @@ class RecordsController extends Controller
             'conflict' => $conflict,
             'approvalType' => $schema->needsUiApproval(),
             'systemFields' => array_keys($schema->systemFields()),
+            'review' => $item !== null ? $this->reviewPanel($schema, $item) : null,
         ], $status);
+    }
+
+    /**
+     * What the record page shows of its reviews: the state, the open
+     * points (with the field they are about) and how many reviews there are.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function reviewPanel(TypeSchema $schema, Item $item): ?array
+    {
+        $reviews = $this->context->reviews();
+        $history = $reviews->forItem($item->id);
+        $reviewable = $reviews->reviewable($schema->slug);
+        if (!$reviewable && $history === []) {
+            return null;
+        }
+        $tags = $reviews->tags();
+        $open = [];
+        foreach ($history as $review) {
+            $points = array_values(array_filter($review['points'], static fn (array $p): bool => $p['open']));
+            if ($points === []) {
+                continue;
+            }
+            $open[] = $review + ['open' => array_map(fn (array $p): array => $p + [
+                'label' => $p['field'] === null ? $this->t('review.general') : ($schema->field($p['field'])?->label ?? $p['field']),
+                'tagLabels' => array_map(static fn (string $k): string => $tags[$k] ?? $k, $p['tags']),
+            ], $points)];
+        }
+
+        return [
+            'reviewable' => $reviewable,
+            'state' => $reviews->state($item),
+            'count' => count($history),
+            'reviews' => array_reverse($open),
+            'openCount' => array_sum(array_map(static fn (array $r): int => count($r['open']), $open)),
+        ];
     }
 
     // -------------------------------------------------------- actions ---
@@ -550,6 +587,7 @@ class RecordsController extends Controller
             'warnings' => $validation['warnings'],
             'messages' => implode("\n", array_merge(array_values($validation['errors']), array_values($validation['warnings']))),
             'unseen' => $item->isUnseenAgentChange(),
+            'review' => $this->context->reviews()->reviewable($schema->slug) ? $this->context->reviews()->state($item) : null,
         ];
     }
 

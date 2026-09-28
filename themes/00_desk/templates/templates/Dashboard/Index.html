@@ -25,6 +25,15 @@
             <div class="tile__title">{desk:t(key: 'ui.media')}</div>
             <div class="tile__numbers"><span><strong>{mediaCount}</strong></span></div>
         </a>
+        <f:if condition="{review}">
+            <a class="tile" href="/review">
+                <div class="tile__title">{desk:t(key: 'review.title')}</div>
+                <div class="tile__numbers">
+                    <span><strong>{review.total}</strong> {desk:t(key: 'review.queue.open')}</span>
+                    <f:if condition="{review.openPoints}"><span><strong>{review.openPoints}</strong> {desk:t(key: 'review.queue.points')}</span></f:if>
+                </div>
+            </a>
+        </f:if>
         <f:if condition="{inboxEnabled}">
             <a class="tile" href="/inbox">
                 <div class="tile__title">{desk:t(key: 'ui.inbox')}</div>

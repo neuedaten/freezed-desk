@@ -94,6 +94,9 @@
                 "desk:outbox:push": "Neuedaten\\FreezedDesk\\Commands\\OutboxPushCommand",
                 "desk:outbox:pull": "Neuedaten\\FreezedDesk\\Commands\\OutboxPullCommand",
                 "desk:outbox:status": "Neuedaten\\FreezedDesk\\Commands\\OutboxStatusCommand",
+                "desk:reviews": "Neuedaten\\FreezedDesk\\Commands\\ReviewsCommand",
+                "desk:review:list": "Neuedaten\\FreezedDesk\\Commands\\ReviewListCommand",
+                "desk:review:done": "Neuedaten\\FreezedDesk\\Commands\\ReviewDoneCommand",
                 "desk:agent": "Neuedaten\\FreezedDesk\\Commands\\AgentCommand"
             }
         }

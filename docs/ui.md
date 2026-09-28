@@ -18,6 +18,7 @@ site's `siteName`, else the project folder ([configuration.md](configuration.md)
 | Media | Upload by drag and drop, duplicate detection by hash, alt text, caption, credit, license, focal point by click, extra fields, origin, where a file is used, thumbnails and video stills |
 | Inbox | Submissions from the site, assignment to a record, note, status, "apply change" opening the record with the submission beside it |
 | Outbox | What goes out with "Send", the state of every message, decisions about unknown ones ([outbox.md](outbox.md)) |
+| Review | Queues per type; a record read-only with a note under every field, the decision (approve, resubmit, defer, block) and every link of the record at the side; the history per record ([review.md](review.md)) |
 | Actions | One button per `desk.actions` entry, output streamed live, exit code shown |
 | Folder types | Content types that read folders (`pages`) are listed read-only with their paths |
 
@@ -82,6 +83,9 @@ publishing; a record with a blocking message stays a draft.
   then saves over it.
 - **Revisions** list who produced each state and when; each can be
   compared with the current state and restored.
+- **Review**: open points of the record's reviews above the fields, each with
+  "Done" and an optional note; "Reviews (n)" opens the history, "Review"
+  the review screen. The side column shows the review state.
 - Extensions add panels above the fields or in the side column.
 
 ## Rules baked in
@@ -124,6 +128,9 @@ exist only in the browser:
 | Outbox page, fetch results | `outbox:status`, `outbox:pull` |
 | Outbox "Send" | `outbox:push` only with `desk.outbox.push` `any`; by default sending is a person's step and the CLI has `outbox:push --dry-run` |
 | Outbox "Decide" | UI only: deciding about an unknown message is a person's step |
+| Review queues, review screen, history | `review:list`, `reviews` |
+| Review decision | UI only: a review is a person's judgement, like approving |
+| Review point done, reopen | `review:done` |
 | Thumbnails, files for the browser, folder types | UI only; `media:get` gives the path |
 
 ## Browser support

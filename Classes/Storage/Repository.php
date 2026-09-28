@@ -251,6 +251,13 @@ final class Repository
             }
         }
 
+        // A record blocked in its last review is not published until a
+        // later review decides otherwise (docs/review.md).
+        if ($status === Status::Published && $existing !== null && $existing->status !== Status::Published
+            && $actor !== Actor::Import && $this->context->reviews()->isBlocked($existing->id)) {
+            $errors['_'] = $this->context->t('review.blocked', ['title' => $existing->title]);
+        }
+
         // The schema's own rules (A5): the guard always, validate when the
         // record is to be published or stays published.
         if ($validateFields) {
@@ -435,6 +442,8 @@ final class Repository
             $database->execute('DELETE FROM relations WHERE from_id = :id OR to_id = :id', ['id' => $id]);
             $database->execute('DELETE FROM media_usage WHERE item_id = :id', ['id' => $id]);
             $database->execute('DELETE FROM revisions WHERE item_id = :id', ['id' => $id]);
+            $database->execute('DELETE FROM review_points WHERE review_id IN (SELECT id FROM reviews WHERE item_id = :id)', ['id' => $id]);
+            $database->execute('DELETE FROM reviews WHERE item_id = :id', ['id' => $id]);
             $database->execute('UPDATE inbox SET item_id = NULL WHERE item_id = :id', ['id' => $id]);
             $database->execute('DELETE FROM items WHERE id = :id', ['id' => $id]);
         });

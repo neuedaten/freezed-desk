@@ -49,6 +49,9 @@ final class AgentGuide
         ['actions | action <name> | action <type>/<slug> <name>', 'List and run actions (build, record actions such as render).'],
         ['status', 'Overview: counts per type, drafts, recent changes, inbox, outbox, last build.'],
         ['preview-url <type>/<slug>', 'Address of the built page.'],
+        ['reviews [<type>] | reviews <type>/<slug> [--open]', 'Open review points to work through, grouped by record; with a record its review history.'],
+        ['review:done <point-id> … [--note:"what was done"]', 'Mark review points done after the record was changed accordingly.'],
+        ['review:list [<type>] [--queue:open]', 'Review queues: what people still have to review.'],
     ];
 
     public function __construct(private readonly DeskContext $context)
@@ -304,6 +307,7 @@ final class AgentGuide
             '3. For a new record: `' . $bin . 'put <type> < file.json` with at least the title field; the slug is derived from it.',
             '4. Images: `' . $bin . 'media:add photo.jpg --alt:"…"` first, then reference `{"file": …}` from the answer.',
             '5. `vendor/bin/freezed build` renders the site; `' . $bin . 'get <type>/<slug> --export` shows the variables a template receives.',
+            '6. Reviews: people review records in the desk UI and leave points per field ("Where is this from?", "Rephrase" …) and a general comment. `' . $bin . 'reviews` lists the open points. Change the record as a point asks, then `' . $bin . 'review:done <id> --note:"…"` with a short note on what you did. The changed record goes back into the review queue by itself.',
         ]));
     }
 
@@ -315,6 +319,7 @@ final class AgentGuide
             'Never delete records or media unless you were told to; archive or leave a note instead.',
             'Never copy internal fields (contacts, notes) into any text.',
             'Use --if-revision on put and re-read the record on a conflict; never overwrite a person\'s change.',
+            'Never review: reviews and their decisions are a person\'s, made in the UI. Mark a review point done only after the record was changed as it asks; if you cannot, leave it open and say why.',
         ];
         $approvalTypes = array_keys(array_filter($this->context->schemas()->all(), static fn (TypeSchema $s): bool => $s->needsUiApproval()));
         $lines = ['## What an agent does not do', ''];

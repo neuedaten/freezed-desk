@@ -15,6 +15,10 @@
             <div class="page-header__actions">
                 <f:if condition="{previewUrl}"><a class="button button--ghost" href="{previewUrl}" target="_blank" rel="noopener" title="{desk:t(key: 'ui.previewHelp', params: {url: previewUrl})}">{desk:t(key: 'ui.preview')}</a></f:if>
                 <f:if condition="{item}"><a class="button button--ghost" href="/types/{schema.slug}/{item.id}/revisions">{desk:t(key: 'ui.revisions')} ({revisionCount})</a></f:if>
+                <f:if condition="{review}">
+                    <a class="button button--ghost" href="/types/{schema.slug}/{item.id}/reviews">{desk:t(key: 'review.historyButton', params: {count: review.count})}</a>
+                    <f:if condition="{review.reviewable}"><a class="button button--ghost" href="/review/{schema.slug}/{item.id}?queue=all">{desk:t(key: 'review.open')}</a></f:if>
+                </f:if>
                 <button class="button" type="submit" name="action" value="save">{f:if(condition: conflict, then: '{desk:t(key: \'ui.conflict.saveAnyway\')}', else: '{desk:t(key: \'ui.save\')}')}</button>
                 <f:if condition="!{schema.single}">
                     <f:if condition="{item.status.value} == 'published'">
@@ -25,7 +29,7 @@
             </div>
         </div>
 
-        <f:if condition="{errors}"><div class="flash flash--error">{desk:t(key: 'ui.errors')}</div></f:if>
+        <f:if condition="{errors}"><div class="flash flash--error"><f:if condition="{errors._}"><f:then>{errors._}</f:then><f:else>{desk:t(key: 'ui.errors')}</f:else></f:if></div></f:if>
 
         <f:if condition="{conflict}">
             <div class="card card--conflict">
@@ -72,6 +76,8 @@
                     </aside>
                 </f:if>
 
+                <f:if condition="{review}"><f:render partial="Review/RecordPanel" arguments="{review: review, schema: schema, item: item}" /></f:if>
+
                 <f:for each="{panels.main}" as="panel"><f:render partial="{panel.partial}" arguments="{vars: panel.variables, item: item, schema: schema, csrfToken: csrfToken, values: values}" /></f:for>
 
                 <div class="fields">
@@ -116,6 +122,7 @@
                             <f:if condition="{item.publishedAt}"><dt>{desk:t(key: 'ui.publishedAt')}</dt><dd>{desk:date(value: item.publishedAt)}</dd></f:if>
                             <dt>{desk:t(key: 'ui.updatedBy')}</dt><dd><f:render partial="Actor" arguments="{actor: item.updatedBy}" /></dd>
                             <dt>{desk:t(key: 'ui.revision')}</dt><dd>{item.revision}</dd>
+                            <f:if condition="{review.reviewable}"><dt>{desk:t(key: 'review.title')}</dt><dd><f:render partial="Review/State" arguments="{state: review.state}" /><f:if condition="{review.state.review}"> <span class="muted">{desk:date(value: review.state.review.createdAt, format: 'd.m.Y')}</span></f:if></dd></f:if>
                             <dt>ID</dt><dd>{item.id}</dd>
                         </dl>
                         <f:if condition="{approvalType}"><p class="field__help">{desk:t(key: 'approval.needed')}</p></f:if>
@@ -149,6 +156,8 @@
             </aside>
         </div>
     </form>
+
+    <f:if condition="{review}"><f:render partial="Review/RecordPanelForms" arguments="{review: review, schema: schema, item: item, csrfToken: csrfToken}" /></f:if>
 
     <f:if condition="{item} && !{schema.single}">
         <div class="danger-zone">

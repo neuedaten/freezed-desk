@@ -9,12 +9,16 @@ use Neuedaten\FreezedDesk\Export\Portable;
 
 /**
  * `freezed-desk export` — one JSON file per record below data/export/<type>/
- * plus data/export/media.json, deterministic and therefore diff-able. Files
- * of records that no longer exist are removed; anything else in the folder
- * is left alone.
+ * plus data/export/media.json, deterministic and therefore diff-able. The
+ * review history of a record goes to data/export/_reviews/<type>/<slug>.json.
+ * Files of records that no longer exist are removed; anything else in the
+ * folder is left alone.
  */
 class ExportCommand extends AbstractCommand
 {
+    /** Sub-folder of the export for review histories; no type can be named so. */
+    public const REVIEWS = '_reviews';
+
     protected function answersInJson(): bool
     {
         return false;
@@ -31,6 +35,7 @@ class ExportCommand extends AbstractCommand
         }
 
         $count = 0;
+        $reviewCount = 0;
         foreach ($context->schemas()->all() as $schema) {
             $directory = $root . '/' . $schema->slug;
             if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
@@ -38,6 +43,8 @@ class ExportCommand extends AbstractCommand
             }
 
             $written = [];
+            $reviewDirectory = $root . '/' . self::REVIEWS . '/' . $schema->slug;
+            $reviewsWritten = [];
             foreach ($context->repository()->find($schema->slug)->anyStatus()->all() as $item) {
                 $record = [
                     'type' => $item->type,
@@ -54,10 +61,21 @@ class ExportCommand extends AbstractCommand
                 self::writeJson($file, $record);
                 $written[$file] = true;
                 $count++;
+
+                $reviews = $context->reviews()->exportItem($item);
+                if ($reviews !== []) {
+                    if (!is_dir($reviewDirectory) && !@mkdir($reviewDirectory, 0777, true) && !is_dir($reviewDirectory)) {
+                        throw new DeskException('Could not create ' . $reviewDirectory . '.');
+                    }
+                    $reviewFile = $reviewDirectory . '/' . str_replace('/', '__', $item->slug) . '.json';
+                    self::writeJson($reviewFile, ['type' => $item->type, 'slug' => $item->slug, 'reviews' => $reviews]);
+                    $reviewsWritten[$reviewFile] = true;
+                    $reviewCount += count($reviews);
+                }
             }
 
-            foreach (glob($directory . '/*.json') ?: [] as $stale) {
-                if (!isset($written[$stale])) {
+            foreach (array_merge(glob($directory . '/*.json') ?: [], glob($reviewDirectory . '/*.json') ?: []) as $stale) {
+                if (!isset($written[$stale]) && !isset($reviewsWritten[$stale])) {
                     unlink($stale);
                     $log->info('Removed ' . $stale);
                 }
@@ -71,7 +89,7 @@ class ExportCommand extends AbstractCommand
         usort($media, static fn (array $a, array $b): int => strcmp($a['file'], $b['file']));
         self::writeJson($root . '/media.json', $media);
 
-        $log->success(sprintf('Exported %d record%s and %d media entr%s to %s', $count, $count === 1 ? '' : 's', count($media), count($media) === 1 ? 'y' : 'ies', $root));
+        $log->success(sprintf('Exported %d record%s, %d media entr%s and %d review%s to %s', $count, $count === 1 ? '' : 's', count($media), count($media) === 1 ? 'y' : 'ies', $reviewCount, $reviewCount === 1 ? '' : 's', $root));
 
         return 0;
     }

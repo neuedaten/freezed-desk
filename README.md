@@ -73,6 +73,7 @@ See [docs/getting-started.md](docs/getting-started.md) for the walk-through.
 - [Actors, approval and conflicts](docs/approval.md)
 - [Inbox module](docs/inbox.md)
 - [Outbox module](docs/outbox.md)
+- [Review](docs/review.md)
 - [Scripts and agents: the JSON CLI](docs/agents.md)
 - [Extending Desk](docs/extending.md)
 

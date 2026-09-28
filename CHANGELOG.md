@@ -6,6 +6,50 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0-beta] - 2026-09-28
+
+### Added
+
+- Review (docs/review.md): a screen for going through many records
+  quickly. A record read-only, field by field, with Markdown rendered and
+  every web address a link that opens in a new window; under each field
+  quick notes ("Correct", "Unsure", "Where is this from?", "Remove", "More
+  detail", "Rephrase", `desk.review.tags`) and a note; at the side a
+  general comment, the decisions Approve, Resubmit, Defer and Block,
+  previous/next in the queue (also Alt + arrow keys) and every web address
+  found in any field of the record.
+- Every decision is stored with date, reviewer, revision and the reviewed
+  state; notes become points that stay open until marked done. Approve
+  publishes a draft, Block takes a record back to draft and refuses
+  publishing until a later review decides otherwise.
+- Queues per type: to review (never reviewed or content changed since),
+  never reviewed, changed since review, resubmit, deferred, blocked,
+  approved, open points, all. `desk.review.types` picks the types.
+- The record page shows open review points with "Done" and an optional
+  note, the review state and the review history with reopen; lists mark
+  records with open points and blocked ones; the sidebar, the overview and
+  `status` count them.
+- CLI: `review:list`, `reviews`, `review:done` (reviews themselves are UI
+  only); the agent guide explains working through review points.
+- `export` writes review histories to `data/export/_reviews/`, `import`
+  brings missing ones back.
+- `{text -> desk:linkify()}` ViewHelper: escaped text with line breaks and
+  links.
+
+### Changed
+
+- Database schema version 4 (tables `reviews`, `review_points`); the UI
+  and `desk:migrate` add them.
+- The record form shows the reason when publishing is refused for the
+  record as a whole instead of the generic hint.
+- The unsaved-changes guard of a form ignores inputs that belong to another
+  form (`form="…"`).
+
+### Fixed
+
+- After a refused save, "Please check the marked fields" no longer shows up
+  again on the next page.
+
 ## [0.2.0-beta] - 2026-09-27
 
 ### Added
@@ -124,6 +168,7 @@ follow [Semantic Versioning](https://semver.org/).
   `delete`, `publish`, `unpublish`, `archive`, `media:add`, `media:list`, and
   `agent`, which prints a generated guide to the project's desk.
 
-[Unreleased]: https://github.com/neuedaten/freezed-desk/compare/v0.2.0-beta...HEAD
+[Unreleased]: https://github.com/neuedaten/freezed-desk/compare/v0.3.0-beta...HEAD
+[0.3.0-beta]: https://github.com/neuedaten/freezed-desk/compare/v0.2.0-beta...v0.3.0-beta
 [0.2.0-beta]: https://github.com/neuedaten/freezed-desk/compare/v0.1.0-beta...v0.2.0-beta
 [0.1.0-beta]: https://github.com/neuedaten/freezed-desk/releases/tag/v0.1.0-beta

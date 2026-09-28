@@ -25,6 +25,8 @@ key runs with these values.
 | `inbox` | `null` | `['url' => …, 'tokenEnv' => …]`, see [inbox.md](inbox.md) |
 | `outbox` | `null` | `['url' => …, 'tokenEnv' => …, 'types' => […], 'mapper' => …, 'push' => 'ui']`, see [outbox.md](outbox.md) |
 | `revisions` | `50` | Revisions kept per record, `0` disables them |
+| `review.types` | `null` | Types offered for review; `null` for every type that is not single. See [review.md](review.md) |
+| `review.tags` | `null` | Quick notes under each field in the review, `key => label`; `null` for the built-in ones |
 | `locale` | `de` | UI language: `de` or `en` |
 | `timezone` | `null` | Time zone, e.g. `Europe/Berlin`; `null` takes the system's |
 | `upload.maxBytes` | 50 MB | Size limit for uploads |

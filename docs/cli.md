@@ -180,7 +180,7 @@ gets the `import` defaults of those fields.
 | `actions` | JSON: the global actions (`desk.actions`) with their last run, and the record actions of every type |
 | `action <name>` | Run a global action |
 | `action <type>/<slug> <name>` | Run a record action of the type's schema |
-| `status` | JSON: the overview: counts per type, drafts, recent changes, `unseenAgentChanges`, open inbox, media count, last build and actions, and what extensions report (`extensions.outbox` …) |
+| `status` | JSON: the overview: counts per type, drafts, recent changes, `unseenAgentChanges`, open inbox, `review` (records to review per type, open points), media count, last build and actions, and what extensions report (`extensions.outbox` …) |
 
 `action` streams the command's output to stdout as it comes and exits with
 its exit code.
@@ -194,6 +194,17 @@ its exit code.
 | `outbox:status` | Every message with its state. `--plan` adds what a push would do, `--remote` the server's view |
 
 `outbox push|pull|status` is the same. See [outbox.md](outbox.md).
+
+## Review (JSON)
+
+| Command | Purpose |
+|---|---|
+| `review:list [<type>]` | Without a type: records per queue for every type offered for review, and the open points. With a type: the records of `--queue:` (default `open`: never reviewed or changed since), with their review state |
+| `reviews [<type>]` | The open review points, grouped by record, oldest first |
+| `reviews <type>/<slug>` | A record's reviews, newest first, with every point. `--open` only reviews with open points, `--snapshot` adds the state reviewed |
+| `review:done <point-id> …` | Mark points done. `--note:…` what was done, `--reopen`, `--dry-run`. `review:done <type>/<slug> --all` marks every open point of a record |
+
+Reviews themselves are made in the UI only. See [review.md](review.md).
 
 ## Agents
 

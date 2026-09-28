@@ -58,6 +58,7 @@ class OverviewCommand extends AbstractCommand
             'recent' => array_map($describe, $repository->recent(10)),
             'unseenAgentChanges' => $unseen,
             'inbox' => ['open' => $context->inbox()->count(['new', 'open'])],
+            'review' => self::review($context),
             'media' => ['count' => $context->media()->count()],
             'lastBuild' => is_array($lastBuild) ? $lastBuild : null,
             'actions' => $actions,
@@ -65,5 +66,25 @@ class OverviewCommand extends AbstractCommand
         ]);
 
         return 0;
+    }
+
+    /**
+     * Records to review per type and open review points, or null when no
+     * type is offered for review.
+     *
+     * @return array{toReview: array<string, int>, total: int, openPoints: int}|null
+     */
+    public static function review(DeskContext $context): ?array
+    {
+        $reviews = $context->reviews();
+        if ($reviews->types() === []) {
+            return null;
+        }
+        $toReview = [];
+        foreach ($reviews->types() as $schema) {
+            $toReview[$schema->slug] = $reviews->counts($schema)['open'];
+        }
+
+        return ['toReview' => $toReview, 'total' => array_sum($toReview), 'openPoints' => $reviews->openTotal()];
     }
 }

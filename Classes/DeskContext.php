@@ -9,6 +9,7 @@ use Neuedaten\FreezedDesk\Export\Markdown;
 use Neuedaten\FreezedDesk\Inbox\FormLoader;
 use Neuedaten\FreezedDesk\Inbox\InboxRepository;
 use Neuedaten\FreezedDesk\Media\MediaRepository;
+use Neuedaten\FreezedDesk\Review\ReviewRepository;
 use Neuedaten\FreezedDesk\Schema\FieldTypeRegistry;
 use Neuedaten\FreezedDesk\Schema\SchemaLoader;
 use Neuedaten\FreezedDesk\Storage\Actor;
@@ -38,6 +39,7 @@ final class DeskContext
     private ?Translator $translator = null;
     private ?FormLoader $forms = null;
     private ?InboxRepository $inbox = null;
+    private ?ReviewRepository $reviews = null;
     private ?Validation $validation = null;
     private ?Extensions $extensions = null;
 
@@ -193,6 +195,11 @@ final class DeskContext
         return $this->inbox ??= new InboxRepository($this);
     }
 
+    public function reviews(): ReviewRepository
+    {
+        return $this->reviews ??= new ReviewRepository($this);
+    }
+
     public function validation(): Validation
     {
         return $this->validation ??= new Validation($this);
@@ -245,6 +252,7 @@ final class DeskContext
             $this->repository = null;
             $this->media = null;
             $this->inbox = null;
+            $this->reviews = null;
         }
     }
 }

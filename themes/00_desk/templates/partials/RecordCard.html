@@ -6,7 +6,7 @@
     <div class="record-card__body">
         <div class="record-card__head">
             <a class="record-card__title" href="/types/{schema.slug}/{row.item.id}">{row.item.title}</a>
-            <f:render partial="Messages" arguments="{row: row}" />
+            <span><f:render partial="Messages" arguments="{row: row}" /> <f:render partial="Review/Flag" arguments="{row: row, schema: schema}" /></span>
         </div>
         <div class="record-card__meta">
             <f:render partial="Status" arguments="{status: row.item.status.value, approval: schema.approval}" />

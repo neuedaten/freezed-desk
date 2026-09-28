@@ -6,6 +6,13 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1-beta] - 2026-09-28
+
+### Changed
+
+- Requires `neuedaten/freezed` `>=0.14.0-beta` instead of `^0.14.0-beta`, so
+  a new minor release of the engine no longer needs a Desk release first.
+
 ## [0.3.0-beta] - 2026-09-28
 
 ### Added
@@ -168,7 +175,8 @@ follow [Semantic Versioning](https://semver.org/).
   `delete`, `publish`, `unpublish`, `archive`, `media:add`, `media:list`, and
   `agent`, which prints a generated guide to the project's desk.
 
-[Unreleased]: https://github.com/neuedaten/freezed-desk/compare/v0.3.0-beta...HEAD
+[Unreleased]: https://github.com/neuedaten/freezed-desk/compare/v0.3.1-beta...HEAD
+[0.3.1-beta]: https://github.com/neuedaten/freezed-desk/compare/v0.3.0-beta...v0.3.1-beta
 [0.3.0-beta]: https://github.com/neuedaten/freezed-desk/compare/v0.2.0-beta...v0.3.0-beta
 [0.2.0-beta]: https://github.com/neuedaten/freezed-desk/compare/v0.1.0-beta...v0.2.0-beta
 [0.1.0-beta]: https://github.com/neuedaten/freezed-desk/releases/tag/v0.1.0-beta

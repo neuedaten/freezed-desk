@@ -26,7 +26,7 @@
         "ext-pdo_sqlite": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
-        "neuedaten/freezed": "^0.14.0-beta",
+        "neuedaten/freezed": ">=0.14.0-beta",
         "league/commonmark": "^2.6"
     },
     "require-dev": {
